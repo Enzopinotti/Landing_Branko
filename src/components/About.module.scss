@@ -4,199 +4,227 @@
   padding: $space-2xl 0;
   background: $black;
   position: relative;
+  overflow: hidden;
+  @include section-glow;
 }
 
 .inner {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
-  gap: 6rem;
-  align-items: start;
+  gap: 8rem;
+  align-items: center;
 }
 
-/* Left */
+/* Left: Visual block */
 .left {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
-  position: sticky;
-  top: 7rem;
+  gap: 3rem;
 }
 
 .mono {
+  position: absolute;
+  top: -100px;
+  left: -50px;
   display: flex;
   gap: 0.5rem;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .monoLetter {
   font-family: $font-heading;
-  font-size: 6rem;
-  font-weight: 300;
-  color: transparent;
-  -webkit-text-stroke: 1px $gold;
+  font-size: 20rem;
+  font-weight: 200;
+  color: $gold;
+  letter-spacing: -20px;
   line-height: 1;
-  letter-spacing: -4px;
-  opacity: 0.6;
 }
 
 .credentials {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: $border;
-  border: 1px solid $border;
-  border-radius: 4px;
-  overflow: hidden;
+  gap: 1.5rem;
 }
 
 .cred {
-  background: $black-card;
-  padding: 1.2rem 1rem;
+  @include glass-card;
+  padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  transition: transform 0.3s;
+
+  &:hover {
+    transform: translateY(-5px);
+    border-color: rgba(201, 169, 110, 0.3);
+  }
 }
 
 .credValue {
   font-family: $font-heading;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   font-weight: 500;
   color: $gold;
 }
 
 .credLabel {
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 1.5px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 2px;
   text-transform: uppercase;
   color: $cream-muted;
 }
 
 .instaBadge {
+  @include glass-card;
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.2rem 1rem;
-  border: 1px solid $border;
-  border-radius: 4px;
-  background: $black-card;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  align-self: flex-start;
+  transition: all 0.3s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: $gold;
+  }
 }
 
 .instaIcon {
-  font-size: 1.4rem;
-  font-weight: 300;
+  font-size: 1.5rem;
   color: $gold;
-  font-family: $font-heading;
-  width: 40px;
-  height: 40px;
-  border: 1px solid $gold;
+  font-weight: 200;
+  width: 50px;
+  height: 50px;
+  border: 1px solid rgba(201, 169, 110, 0.3);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
 .instaHandle {
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 600;
   color: $cream;
 }
 
 .instaFollowers {
-  font-size: 0.65rem;
-  font-weight: 400;
-  letter-spacing: 1px;
+  font-size: 0.7rem;
   color: $cream-muted;
 }
 
-/* Right */
+/* Right: Text */
 .right {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 2rem;
 }
 
 .label {
   @include label-style;
-  margin-bottom: 1.5rem;
-}
-
-.labelLine {
-  display: block;
-  width: 28px;
-  height: 1px;
-  background: $gold;
+  align-self: flex-start;
 }
 
 .title {
   font-family: $font-heading;
-  font-size: clamp(3rem, 5vw, 5rem);
+  font-size: clamp(3.5rem, 6vw, 5.5rem);
   font-weight: 300;
-  line-height: 1.05;
+  line-height: 0.95;
   color: $cream;
-  margin-bottom: 2.5rem;
-}
+  letter-spacing: -2px;
 
-.title em {
-  font-style: italic;
-  color: $gold;
+  em {
+    font-style: italic;
+    color: $gold;
+  }
 }
 
 .text {
-  font-size: 0.9rem;
-  font-weight: 300;
+  font-size: 1.05rem;
+  line-height: 1.8;
   color: $cream-muted;
-  line-height: 1.9;
-  margin-bottom: 1.5rem;
-}
+  max-width: 550px;
 
-.text strong {
-  color: $cream;
-  font-weight: 500;
+  strong {
+    color: $cream;
+    font-weight: 500;
+  }
 }
 
 .philosophy {
   position: relative;
-  margin: 2.5rem 0 3rem;
-  padding: 2rem 2rem 2rem 3rem;
+  margin-top: 1rem;
+  padding-left: 2.5rem;
   border-left: 1px solid $gold;
-  background: $gold-dim;
-  border-radius: 0 4px 4px 0;
 }
 
 .quoteDecor {
   position: absolute;
-  top: -0.5rem;
-  left: 1.5rem;
+  top: -1.5rem;
+  left: 0.5rem;
   font-family: $font-heading;
   font-size: 4rem;
-  color: $gold;
+  color: rgba(201, 169, 110, 0.2);
   line-height: 1;
-  opacity: 0.4;
 }
 
 .quote {
   font-family: $font-heading;
-  font-size: 1.3rem;
-  font-weight: 400;
+  font-size: 1.6rem;
   font-style: italic;
+  font-weight: 400;
   color: $cream;
-  line-height: 1.6;
-  border: none;
+  line-height: 1.4;
 }
 
 .btn {
   @include btn-gold;
   align-self: flex-start;
+  margin-top: 1rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .inner {
     grid-template-columns: 1fr;
-    gap: 3rem;
+    gap: 5rem;
   }
 
   .left {
-    position: static;
+    order: 2;
+  }
+
+  .right {
+    order: 1;
+  }
+
+  .mono {
+    top: -50px;
+    left: 0;
+  }
+
+  .monoLetter {
+    font-size: 15rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 3.5rem;
+  }
+
+  .credentials {
+    grid-template-columns: 1fr;
+  }
+
+  .section {
+    padding: $space-xl 0;
   }
 }

@@ -1,159 +1,177 @@
 @use "../styles/variables" as *;
 
 .footer {
-  background: $black-soft;
+  padding: 8rem 0 3rem;
+  background: $black;
   border-top: 1px solid $border;
-  padding: $space-xl 0 0;
 }
 
 .top {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.2fr;
-  gap: 3rem;
-  padding-bottom: $space-xl;
-  border-bottom: 1px solid $border;
+  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+  gap: 4rem;
+  margin-bottom: 6rem;
 }
 
 /* Brand */
-.brand { display: flex; flex-direction: column; gap: 1.5rem; }
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .logoMono {
   font-family: $font-heading;
-  font-size: 1.4rem;
-  font-weight: 600;
+  font-size: 1.8rem;
   color: $gold;
   border: 1px solid $gold;
-  width: 44px;
-  height: 44px;
+  width: 54px;
+  height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 2px;
-  flex-shrink: 0;
-  letter-spacing: 1px;
 }
 
 .logoName {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 3px;
-  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 4px;
   color: $cream;
+  margin-bottom: 2px;
 }
 
 .logoSub {
-  font-size: 0.62rem;
-  font-weight: 400;
-  letter-spacing: 1.5px;
-  color: $cream-muted;
-  margin-top: 2px;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: $gold;
+  opacity: 0.8;
 }
 
 .tagline {
   font-family: $font-heading;
-  font-size: 1rem;
+  font-size: 1.5rem;
   font-style: italic;
-  font-weight: 300;
   color: $cream-muted;
-  max-width: 260px;
-  line-height: 1.6;
+  line-height: 1.4;
+  max-width: 250px;
 }
 
 /* Links */
-.links { display: flex; flex-direction: column; gap: 0.6rem; }
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
 
 .linksTitle {
   font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 2.5px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   color: $gold;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .link {
-  font-size: 0.78rem;
-  font-weight: 300;
+  font-size: 0.85rem;
   color: $cream-muted;
   text-decoration: none;
-  transition: color 0.25s;
-  letter-spacing: 0.5px;
+  transition: color 0.3s;
+
+  &:hover {
+    color: $gold;
+  }
 }
 
-.link:hover { color: $cream; }
-
 .linkText {
-  font-size: 0.78rem;
-  font-weight: 300;
+  font-size: 0.85rem;
   color: $cream-muted;
-  letter-spacing: 0.3px;
+  line-height: 1.5;
 }
 
 /* CTA Block */
 .ctaBlock {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 2.5rem;
+  border: 1px solid $border;
+  border-radius: 2px;
 }
 
 .ctaText {
   font-family: $font-heading;
-  font-size: 1.2rem;
-  font-style: italic;
+  font-size: 1.25rem;
   color: $cream;
 }
 
 .ctaBtn {
   @include btn-gold;
-  padding: 0.8rem 1.5rem;
-  font-size: 0.7rem;
+  width: 100%;
 }
 
 .phone {
-  font-size: 0.75rem;
-  font-weight: 300;
+  font-size: 0.8rem;
+  font-weight: 600;
   color: $cream-muted;
-  letter-spacing: 1px;
+  text-align: center;
 }
 
 /* Bottom */
 .bottom {
+  border-top: 1px solid $border;
+  padding-top: 3rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 2rem;
-  padding: 1.5rem 0;
-  flex-wrap: wrap;
 }
 
 .copy {
-  font-size: 0.72rem;
-  font-weight: 400;
-  color: $cream-muted;
-  opacity: 0.6;
+  font-size: 0.75rem;
+  color: rgba(245, 240, 232, 0.3);
 }
 
 .disclaimer {
   font-size: 0.65rem;
-  font-weight: 300;
-  color: $cream-muted;
-  opacity: 0.4;
-  max-width: 500px;
+  color: rgba(245, 240, 232, 0.2);
+  max-width: 400px;
   text-align: right;
+  line-height: 1.5;
 }
 
 @media (max-width: 1024px) {
-  .top { grid-template-columns: 1fr 1fr; }
+  .top {
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem 2rem;
+  }
 }
 
-@media (max-width: 600px) {
-  .top { grid-template-columns: 1fr; gap: 2rem; }
-  .bottom { flex-direction: column; align-items: flex-start; }
-  .disclaimer { text-align: left; }
+@media (max-width: 768px) {
+  .top {
+    grid-template-columns: 1fr;
+  }
+
+  .ctaBlock {
+    padding: 2rem;
+  }
+
+  .bottom {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .disclaimer {
+    text-align: center;
+  }
 }

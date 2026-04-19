@@ -2,193 +2,191 @@
 
 .section {
   padding: $space-2xl 0;
-  background: $black-soft;
+  background: $black;
   position: relative;
-  @include section-divider;
+  overflow: hidden;
+  @include section-glow;
 }
 
-/* Header */
 .header {
-  text-align: center;
-  max-width: 600px;
-  margin: 0 auto 5rem;
+  max-width: 800px;
+  margin-bottom: 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .label {
   @include label-style;
-  margin-bottom: 1.5rem;
-}
-
-.labelLine {
-  display: block;
-  width: 28px;
-  height: 1px;
-  background: $gold;
 }
 
 .title {
   font-family: $font-heading;
-  font-size: clamp(2.5rem, 4vw, 3.8rem);
+  font-size: clamp(3rem, 6vw, 5.5rem);
   font-weight: 300;
-  line-height: 1.1;
+  line-height: 1;
   color: $cream;
-  margin-bottom: 1.5rem;
-}
+  letter-spacing: -2px;
 
-.title em {
-  font-style: italic;
-  color: $gold;
+  em {
+    font-style: italic;
+    color: $gold;
+    display: block;
+  }
 }
 
 .desc {
-  font-size: 0.9rem;
-  font-weight: 300;
+  font-size: 1.1rem;
+  line-height: 1.6;
   color: $cream-muted;
-  line-height: 1.8;
+  max-width: 500px;
 }
 
-/* Grid */
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5px;
-  background: $border;
-  border: 1px solid $border;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 4rem;
+  gap: 2rem;
 }
 
-/* Card */
 .card {
-  position: relative;
-  background: $black-card;
-  padding: 2.5rem 2rem;
+  @include glass-card;
+  padding: 3rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 0;
-  transition: background 0.35s $ease-out;
-  cursor: default;
+  gap: 1.5rem;
+  transition: all 0.4s $ease-out;
+  position: relative;
+  animation: fadeUp 0.8s ease backwards;
+  animation-delay: var(--delay);
+
+  &:hover {
+    border-color: rgba(201, 169, 110, 0.4);
+    transform: translateY(-8px);
+    background: rgba(255, 255, 255, 0.05);
+
+    .cardIcon {
+      color: $gold;
+      transform: scale(1.1);
+    }
+
+    .arrow {
+      transform: translateX(5px);
+    }
+  }
 }
 
-.card:hover {
-  background: $black-hover;
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.card:hover .cardCta {
-  color: $gold;
-  gap: 0.6rem;
-}
-
-.card:hover .arrow {
-  transform: translateX(4px);
-}
-
-/* Tag */
 .cardTag {
   position: absolute;
-  top: 1.2rem;
-  right: 1.2rem;
+  top: 1.5rem;
+  right: 1.5rem;
   font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: $black;
-  background: $gold;
-  padding: 3px 8px;
-  border-radius: 1px;
+  padding: 0.3rem 0.6rem;
+  background: rgba(201, 169, 110, 0.1);
+  color: $gold;
+  border: 1px solid rgba(201, 169, 110, 0.2);
+  border-radius: 2px;
 }
 
 .cardIcon {
-  font-size: 1.4rem;
-  color: $gold;
-  margin-bottom: 1.5rem;
-  line-height: 1;
+  font-size: 1.8rem;
+  color: rgba(201, 169, 110, 0.6);
+  transition: all 0.3s;
 }
 
 .cardTitle {
   font-family: $font-heading;
-  font-size: 1.4rem;
-  font-weight: 500;
+  font-size: 1.8rem;
+  font-weight: 400;
   color: $cream;
-  margin-bottom: 0.25rem;
+  line-height: 1.1;
 }
 
 .cardSub {
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 2px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   color: $gold;
-  margin-bottom: 1.2rem;
+  margin-top: -0.5rem;
 }
 
 .cardDesc {
-  font-size: 0.85rem;
-  font-weight: 300;
-  color: $cream-muted;
+  font-size: 0.9rem;
   line-height: 1.7;
-  flex: 1;
-  margin-bottom: 2rem;
+  color: $cream-muted;
+  margin-bottom: 1rem;
 }
 
 .cardCta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: $cream-muted;
-  text-decoration: none;
-  transition: color 0.25s, gap 0.25s $ease-out;
   margin-top: auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: $cream;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.3s;
+
+  &:hover {
+    color: $gold;
+  }
 }
 
 .arrow {
-  display: inline-block;
-  transition: transform 0.25s $ease-out;
+  transition: transform 0.3s;
+  color: $gold;
 }
 
-/* Bottom CTA */
 .bottomCta {
+  margin-top: 6rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 2.5rem;
-  padding: 2.5rem;
-  border: 1px solid $border;
-  border-radius: 4px;
-  background: $gold-dim;
+  gap: 2rem;
+  padding: 4rem;
+  border-top: 1px solid $border;
 }
 
 .bottomText {
-  font-size: 0.9rem;
-  font-weight: 300;
+  font-size: 1.2rem;
   color: $cream-muted;
 }
 
 .bottomBtn {
   @include btn-gold;
-  padding: 0.8rem 2rem;
-  white-space: nowrap;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
   .grid {
     grid-template-columns: 1fr;
   }
 
-  .bottomCta {
-    flex-direction: column;
-    gap: 1.5rem;
-    text-align: center;
+  .title {
+    font-size: 3.5rem;
   }
-}
 
-@media (min-width: 601px) and (max-width: 900px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
+  .section {
+    padding: $space-xl 0;
+  }
+
+  .bottomCta {
+    padding: 2rem 0;
   }
 }
