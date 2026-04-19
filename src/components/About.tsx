@@ -72,7 +72,7 @@ export default function About() {
           rotate={-15}
           gradient="from-brand-gold/[0.05]"
           className="right-[-10%] top-[20%]"
-          parallaxSpeed={-0.6}
+          parallaxSpeed={-1.2}
         />
         <ElegantShape
           delay={0.8}
@@ -81,7 +81,7 @@ export default function About() {
           rotate={20}
           gradient="from-brand-gold/[0.03]"
           className="left-[5%] bottom-[10%]"
-          parallaxSpeed={1.5}
+          parallaxSpeed={2.2}
         />
       </div>
 

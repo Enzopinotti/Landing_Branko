@@ -90,7 +90,7 @@ export default function Contact() {
           rotate={-20}
           gradient="from-brand-gold/[0.05]"
           className="right-[5%] top-[10%]"
-          parallaxSpeed={0.7}
+          parallaxSpeed={1.4}
         />
         <ElegantShape
           delay={1}
@@ -99,7 +99,7 @@ export default function Contact() {
           rotate={30}
           gradient="from-brand-gold/[0.04]"
           className="left-[-5%] bottom-[5%]"
-          parallaxSpeed={-1.5}
+          parallaxSpeed={-2}
         />
       </div>
 

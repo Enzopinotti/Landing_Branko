@@ -102,7 +102,7 @@ export default function Services() {
           rotate={-10}
           gradient="from-brand-gold/[0.08]"
           className="left-[5%] top-[10%]"
-          parallaxSpeed={0.8}
+          parallaxSpeed={1.5}
         />
         <ElegantShape
           delay={0.4}
@@ -111,7 +111,7 @@ export default function Services() {
           rotate={15}
           gradient="from-brand-gold/[0.05]"
           className="right-[10%] bottom-[20%]"
-          parallaxSpeed={-1.2}
+          parallaxSpeed={-1.8}
         />
       </div>
 
