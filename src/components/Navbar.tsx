@@ -1,79 +1,82 @@
-import { useState, useEffect } from 'react'
-import styles from './Navbar.module.scss'
+"use client";
 
-const LINKS = [
-  { label: 'Inicio',       href: '#inicio' },
-  { label: 'Tratamientos', href: '#tratamientos' },
-  { label: 'El Doctor',    href: '#sobre-mi' },
-  { label: 'Resultados',   href: '#resultados' },
-]
+import { useState, useRef } from "react";
+import styles from "./Navbar.module.scss";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+
+const NAV_LINKS = [
+  { label: "Servicios", href: "#tratamientos" },
+  { label: "Sobre Mí", href: "#sobre-mi" },
+  { label: "Resultados", href: "#resultados" },
+  { label: "Contacto", href: "#contacto" },
+];
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  useGSAP(() => {
+    // Escuchar el scroll para cambiar el estado de la Navbar
+    const handleScroll = () => {
+      const scrolled = window.scrollY > 50;
+      if (scrolled !== isScrolled) {
+        setIsScrolled(scrolled);
+        
+        // Animación suave del fondo con GSAP
+        gsap.to(navRef.current, {
+          backgroundColor: scrolled ? "rgba(3, 3, 3, 0.95)" : "rgba(3, 3, 3, 0)",
+          borderBottomColor: scrolled ? "rgba(201, 169, 110, 0.2)" : "rgba(201, 169, 110, 0)",
+          paddingTop: scrolled ? "0.8rem" : "1.25rem",
+          paddingBottom: scrolled ? "0.8rem" : "1.25rem",
+          backdropFilter: scrolled ? "blur(10px)" : "blur(0px)",
+          duration: 0.4,
+          ease: "power2.out",
+        });
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isScrolled]);
 
   return (
-    <nav className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}>
-      <div className={`container ${styles.inner}`}>
-        {/* Logo */}
-        <a href="#inicio" className={styles.logo}>
-          <span className={styles.logoMono}>BI</span>
-          <span className={styles.logoText}>BRANKO IRIART</span>
-        </a>
+    <nav ref={navRef} className={`${styles.nav} ${isScrolled ? styles.scrolled : ""}`}>
+      <div className="container">
+        <div className={styles.inner}>
+          
+          {/* Logo */}
+          <a href="#" className={styles.logo}>
+            <div className={styles.logoMono}>BI</div>
+            <div className={styles.logoText}>
+              <span className={styles.name}>Branko Iriart</span>
+              <span className={styles.tagline}>Estética Facial</span>
+            </div>
+          </a>
 
-        {/* Desktop links */}
-        <ul className={styles.links}>
-          {LINKS.map(l => (
-            <li key={l.label}>
-              <a href={l.href} className={styles.link}>{l.label}</a>
-            </li>
-          ))}
-        </ul>
+          {/* Nav Links */}
+          <ul className={styles.links}>
+            {NAV_LINKS.map(link => (
+              <li key={link.label}>
+                <a href={link.href} className={styles.link}>
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
 
-        {/* CTA */}
-        <a
-          href="https://wa.me/541173608299"
-          target="_blank"
-          rel="noreferrer"
-          className={styles.cta}
-        >
-          Reservar turno
-        </a>
+          {/* CTA Mobile / Desktop highlight */}
+          <a 
+            href="https://wa.me/541173608299" 
+            target="_blank" 
+            rel="noreferrer" 
+            className={styles.cta}
+          >
+            Reservar
+          </a>
 
-        {/* Hamburger */}
-        <button
-          className={`${styles.burger} ${menuOpen ? styles.burgerOpen : ''}`}
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Menú"
-        >
-          <span /><span /><span />
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      <div className={`${styles.mobile} ${menuOpen ? styles.mobileOpen : ''}`}>
-        {LINKS.map(l => (
-          <a
-            key={l.label}
-            href={l.href}
-            className={styles.mobileLink}
-            onClick={() => setMenuOpen(false)}
-          >{l.label}</a>
-        ))}
-        <a
-          href="https://wa.me/541173608299"
-          target="_blank"
-          rel="noreferrer"
-          className={styles.mobileCta}
-          onClick={() => setMenuOpen(false)}
-        >Reservar turno</a>
+        </div>
       </div>
     </nav>
-  )
+  );
 }

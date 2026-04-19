@@ -5,19 +5,24 @@ import About from './components/About'
 import Results from './components/Results'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
+import SmoothScroll from './components/SmoothScroll'
 
-export default function App() {
+function App() {
   return (
-    <>
-      <Navbar />
-      <main>
-        <Hero />
-        <Services />
-        <About />
-        <Results />
-        <Contact />
-      </main>
-      <Footer />
-    </>
+    <SmoothScroll>
+      <div className="app">
+        <Navbar />
+        <main>
+          <Hero />
+          <Services />
+          <About />
+          <Results />
+          <Contact />
+        </main>
+        <Footer />
+      </div>
+    </SmoothScroll>
   )
 }
+
+export default App

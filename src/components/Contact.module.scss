@@ -4,207 +4,190 @@
   padding: $space-2xl 0;
   background: $black;
   position: relative;
-  overflow: hidden;
-  @include section-glow;
+  @include section-divider;
 }
 
 .inner {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 8rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 6rem;
   align-items: start;
 }
 
-/* Left: CTA principal */
-.left {
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
-}
+/* Left */
+.left { display: flex; flex-direction: column; gap: 0; }
 
 .label {
   @include label-style;
-  align-self: flex-start;
+  margin-bottom: 1.5rem;
 }
+
+.labelLine { display: block; width: 28px; height: 1px; background: $gold; }
 
 .title {
   font-family: $font-heading;
-  font-size: clamp(4rem, 8vw, 7rem);
+  font-size: clamp(3.5rem, 6vw, 6rem);
   font-weight: 300;
-  line-height: 0.95;
+  line-height: 1.0;
   color: $cream;
-  letter-spacing: -3px;
-
-  em {
-    font-style: italic;
-    color: $gold;
-  }
+  margin-bottom: 1.5rem;
 }
+
+.title em { font-style: italic; color: $gold; }
 
 .subtitle {
-  font-size: 1.2rem;
-  line-height: 1.6;
+  font-size: 0.9rem;
+  font-weight: 300;
   color: $cream-muted;
-  max-width: 450px;
+  line-height: 1.8;
+  margin-bottom: 2.5rem;
+  max-width: 380px;
 }
 
+/* WhatsApp CTA */
 .waCta {
-  @include btn-gold;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 2rem;
+  background: #25D366;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 2px;
+  margin-bottom: 2.5rem;
   align-self: flex-start;
-  gap: 1rem;
-  padding: 1.2rem 2.5rem;
-  font-size: 0.8rem;
+  transition: background 0.25s, transform 0.25s $ease-out, box-shadow 0.25s;
+}
+
+.waCta:hover {
+  background: #1ebe5d;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(37, 211, 102, 0.3);
 }
 
 .waIcon {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
 }
 
+/* Locations */
 .locations {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: 2rem;
-  padding-top: 3rem;
-  border-top: 1px solid $border;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
 }
 
 .location {
   display: flex;
+  align-items: flex-start;
   gap: 1rem;
 }
 
 .locationDot {
-  width: 8px;
-  height: 8px;
-  background: $gold;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
+  background: $gold;
+  flex-shrink: 0;
   margin-top: 6px;
-  box-shadow: 0 0 10px $gold;
 }
 
 .locationCity {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: $cream;
-  margin-bottom: 0.25rem;
+  letter-spacing: 1px;
 }
 
 .locationAddr {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 300;
   color: $cream-muted;
-  line-height: 1.5;
 }
 
-.social {
-  margin-top: 1rem;
-}
+/* Social */
+.social { padding-top: 1.5rem; border-top: 1px solid $border; }
 
 .socialLink {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 500;
-  letter-spacing: 1px;
-  color: $gold;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: $cream-muted;
   text-decoration: none;
-  opacity: 0.8;
-  transition: opacity 0.3s;
-
-  &:hover {
-    opacity: 1;
-  }
+  transition: color 0.25s;
 }
+
+.socialLink:hover { color: $gold; }
 
 /* Right: FAQ */
+.right { display: flex; flex-direction: column; gap: 0; padding-top: 5.5rem; }
+
 .faqTitle {
   font-family: $font-heading;
-  font-size: 2.2rem;
-  font-weight: 300;
+  font-size: 1.5rem;
+  font-weight: 400;
   color: $cream;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
-.faqs {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  background: $border;
-  border: 1px solid $border;
-  border-radius: 4px;
+.faqs { display: flex; flex-direction: column; }
+
+.faq {
+  border-bottom: 1px solid $border;
   overflow: hidden;
 }
 
-.faq {
-  background: rgba(255, 255, 255, 0.02);
-  transition: all 0.3s;
-}
-
-.faqOpen {
-  background: rgba(255, 255, 255, 0.04);
-}
-
 .faqQ {
-  width: 100%;
-  padding: 1.8rem 2rem;
-  background: none;
-  border: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.4rem 0;
+  background: none;
+  border: none;
+  color: $cream;
+  font-family: $font-body;
+  font-size: 0.85rem;
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
-  color: $cream;
-  font-size: 0.9rem;
-  font-weight: 500;
-  gap: 2rem;
-
-  &:hover .faqToggle {
-    color: $gold;
-    transform: scale(1.1);
-  }
+  transition: color 0.25s;
 }
 
+.faqQ:hover { color: $gold; }
+.faqOpen .faqQ { color: $gold; }
+
 .faqToggle {
-  font-size: 1.2rem;
-  color: $cream-muted;
-  transition: all 0.3s;
+  font-size: 1.3rem;
+  color: $gold;
+  flex-shrink: 0;
+  font-weight: 300;
 }
 
 .faqA {
   max-height: 0;
   overflow: hidden;
-  transition: all 0.4s $ease-out;
-  padding: 0 2rem;
-
-  p {
-    font-size: 0.85rem;
-    line-height: 1.7;
-    color: $cream-muted;
-    padding-bottom: 1.8rem;
-  }
+  transition: max-height 0.4s $ease-out;
 }
 
-.faqOpen .faqA {
-  max-height: 200px;
+.faqOpen .faqA { max-height: 200px; }
+
+.faqA p {
+  padding-bottom: 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: $cream-muted;
+  line-height: 1.8;
 }
 
-@media (max-width: 1024px) {
-  .inner {
-    grid-template-columns: 1fr;
-    gap: 6rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .title {
-    font-size: 4.5rem;
-  }
-
-  .locations {
-    grid-template-columns: 1fr;
-  }
-
-  .section {
-    padding: $space-xl 0;
-  }
+@media (max-width: 900px) {
+  .inner { grid-template-columns: 1fr; gap: 3rem; }
+  .right { padding-top: 0; }
 }

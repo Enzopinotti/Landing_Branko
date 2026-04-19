@@ -50,11 +50,25 @@
 }
 
 .logoText {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 3px;
-  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
   color: $cream;
+}
+
+.name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+}
+
+.tagline {
+  font-size: 0.55rem;
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: $gold;
 }
 
 /* Links */

@@ -1,177 +1,159 @@
 @use "../styles/variables" as *;
 
 .footer {
-  padding: 8rem 0 3rem;
-  background: $black;
+  background: $black-soft;
   border-top: 1px solid $border;
+  padding: $space-xl 0 0;
 }
 
 .top {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
-  gap: 4rem;
-  margin-bottom: 6rem;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr;
+  gap: 3rem;
+  padding-bottom: $space-xl;
+  border-bottom: 1px solid $border;
 }
 
 /* Brand */
-.brand {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
+.brand { display: flex; flex-direction: column; gap: 1.5rem; }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .logoMono {
   font-family: $font-heading;
-  font-size: 1.8rem;
+  font-size: 1.4rem;
+  font-weight: 600;
   color: $gold;
   border: 1px solid $gold;
-  width: 54px;
-  height: 54px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 2px;
+  flex-shrink: 0;
+  letter-spacing: 1px;
 }
 
 .logoName {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
   color: $cream;
-  margin-bottom: 2px;
 }
 
 .logoSub {
-  font-size: 0.6rem;
-  font-weight: 500;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: $gold;
-  opacity: 0.8;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 1.5px;
+  color: $cream-muted;
+  margin-top: 2px;
 }
 
 .tagline {
   font-family: $font-heading;
-  font-size: 1.5rem;
+  font-size: 1rem;
   font-style: italic;
+  font-weight: 300;
   color: $cream-muted;
-  line-height: 1.4;
-  max-width: 250px;
+  max-width: 260px;
+  line-height: 1.6;
 }
 
 /* Links */
-.links {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+.links { display: flex; flex-direction: column; gap: 0.6rem; }
 
 .linksTitle {
   font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 3px;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
   color: $gold;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .link {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 300;
   color: $cream-muted;
   text-decoration: none;
-  transition: color 0.3s;
-
-  &:hover {
-    color: $gold;
-  }
+  transition: color 0.25s;
+  letter-spacing: 0.5px;
 }
 
+.link:hover { color: $cream; }
+
 .linkText {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 300;
   color: $cream-muted;
-  line-height: 1.5;
+  letter-spacing: 0.3px;
 }
 
 /* CTA Block */
 .ctaBlock {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  background: rgba(255, 255, 255, 0.02);
-  padding: 2.5rem;
-  border: 1px solid $border;
-  border-radius: 2px;
+  gap: 1rem;
 }
 
 .ctaText {
   font-family: $font-heading;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
+  font-style: italic;
   color: $cream;
 }
 
 .ctaBtn {
   @include btn-gold;
-  width: 100%;
+  padding: 0.8rem 1.5rem;
+  font-size: 0.7rem;
 }
 
 .phone {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 300;
   color: $cream-muted;
-  text-align: center;
+  letter-spacing: 1px;
 }
 
 /* Bottom */
 .bottom {
-  border-top: 1px solid $border;
-  padding-top: 3rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 2rem;
+  padding: 1.5rem 0;
+  flex-wrap: wrap;
 }
 
 .copy {
-  font-size: 0.75rem;
-  color: rgba(245, 240, 232, 0.3);
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: $cream-muted;
+  opacity: 0.6;
 }
 
 .disclaimer {
   font-size: 0.65rem;
-  color: rgba(245, 240, 232, 0.2);
-  max-width: 400px;
+  font-weight: 300;
+  color: $cream-muted;
+  opacity: 0.4;
+  max-width: 500px;
   text-align: right;
-  line-height: 1.5;
 }
 
 @media (max-width: 1024px) {
-  .top {
-    grid-template-columns: 1fr 1fr;
-    gap: 4rem 2rem;
-  }
+  .top { grid-template-columns: 1fr 1fr; }
 }
 
-@media (max-width: 768px) {
-  .top {
-    grid-template-columns: 1fr;
-  }
-
-  .ctaBlock {
-    padding: 2rem;
-  }
-
-  .bottom {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .disclaimer {
-    text-align: center;
-  }
+@media (max-width: 600px) {
+  .top { grid-template-columns: 1fr; gap: 2rem; }
+  .bottom { flex-direction: column; align-items: flex-start; }
+  .disclaimer { text-align: left; }
 }
