@@ -1,0 +1,85 @@
+@use "../styles/variables" as *;
+
+.container {
+  position: fixed;
+  inset: 0;
+  background-color: #030303;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo {
+  position: relative;
+  font-family: $font-heading;
+  font-size: 10rem;
+  font-weight: 600;
+  color: $gold;
+  letter-spacing: 5px;
+  border: 4px solid $gold;
+  width: 250px;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: 0 0 50px rgba(201, 169, 110, 0.2);
+  overflow: hidden; // Importante para el brillo
+
+  // Capa de brillo dinámico
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.4),
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    transform: skewX(-25deg);
+  }
+
+  // Responsive logo size
+  @media (max-width: 768px) {
+    font-size: 6rem;
+    width: 150px;
+    height: 150px;
+    border-width: 2px;
+  }
+}
+
+// Clase para disparar el brillo desde GSAP
+.logoShine::before {
+  animation: shine 1.2s ease-out forwards;
+}
+
+@keyframes shine {
+  0% { left: -150%; }
+  100% { left: 150%; }
+}
+
+.glow {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(201, 169, 110, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+}

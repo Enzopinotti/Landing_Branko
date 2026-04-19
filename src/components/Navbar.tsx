@@ -12,12 +12,21 @@ const NAV_LINKS = [
   { label: "Contacto", href: "#contacto" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ hideInitial = false }: { hideInitial?: boolean }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const navRef = useRef<HTMLElement>(null);
+  const logoRef = useRef<HTMLAnchorElement>(null);
 
   useGSAP(() => {
-    // Escuchar el scroll para cambiar el estado de la Navbar
+    // Si hideInitial es true, ocultamos el logo al principio y lo revelamos después de un delay
+    // que coincida con el final de la animación del Preloader
+    if (hideInitial) {
+      gsap.fromTo(logoRef.current, 
+        { opacity: 0 },
+        { opacity: 1, duration: 0.8, delay: 3.2, ease: "power2.inOut" }
+      );
+    }
+
     const handleScroll = () => {
       const scrolled = window.scrollY > 50;
       if (scrolled !== isScrolled) {
@@ -46,7 +55,7 @@ export default function Navbar() {
         <div className={styles.inner}>
           
           {/* Logo */}
-          <a href="#" className={styles.logo}>
+          <a ref={logoRef} href="#" className={styles.logo}>
             <div className={styles.logoMono}>BI</div>
             <div className={styles.logoText}>
               <span className={styles.name}>Branko Iriart</span>
