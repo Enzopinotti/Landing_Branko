@@ -130,6 +130,3 @@ npm run dev
 - [x] Accesibilidad (Aria-labels y contraste adecuado).
 - [x] Responsive Design verificado (Mobile, Tablet, Desktop).
 
----
-
-*Desarrollado con ❤️ por Antigravity para el ecosistema ProSkills.*
