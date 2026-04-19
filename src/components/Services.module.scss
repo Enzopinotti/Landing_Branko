@@ -1,0 +1,194 @@
+@use "../styles/variables" as *;
+
+.section {
+  padding: $space-2xl 0;
+  background: $black-soft;
+  position: relative;
+  @include section-divider;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 5rem;
+}
+
+.label {
+  @include label-style;
+  margin-bottom: 1.5rem;
+}
+
+.labelLine {
+  display: block;
+  width: 28px;
+  height: 1px;
+  background: $gold;
+}
+
+.title {
+  font-family: $font-heading;
+  font-size: clamp(2.5rem, 4vw, 3.8rem);
+  font-weight: 300;
+  line-height: 1.1;
+  color: $cream;
+  margin-bottom: 1.5rem;
+}
+
+.title em {
+  font-style: italic;
+  color: $gold;
+}
+
+.desc {
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: $cream-muted;
+  line-height: 1.8;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5px;
+  background: $border;
+  border: 1px solid $border;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4rem;
+}
+
+/* Card */
+.card {
+  position: relative;
+  background: $black-card;
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  transition: background 0.35s $ease-out;
+  cursor: default;
+}
+
+.card:hover {
+  background: $black-hover;
+}
+
+.card:hover .cardCta {
+  color: $gold;
+  gap: 0.6rem;
+}
+
+.card:hover .arrow {
+  transform: translateX(4px);
+}
+
+/* Tag */
+.cardTag {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: $black;
+  background: $gold;
+  padding: 3px 8px;
+  border-radius: 1px;
+}
+
+.cardIcon {
+  font-size: 1.4rem;
+  color: $gold;
+  margin-bottom: 1.5rem;
+  line-height: 1;
+}
+
+.cardTitle {
+  font-family: $font-heading;
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: $cream;
+  margin-bottom: 0.25rem;
+}
+
+.cardSub {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: $gold;
+  margin-bottom: 1.2rem;
+}
+
+.cardDesc {
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: $cream-muted;
+  line-height: 1.7;
+  flex: 1;
+  margin-bottom: 2rem;
+}
+
+.cardCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: $cream-muted;
+  text-decoration: none;
+  transition: color 0.25s, gap 0.25s $ease-out;
+  margin-top: auto;
+}
+
+.arrow {
+  display: inline-block;
+  transition: transform 0.25s $ease-out;
+}
+
+/* Bottom CTA */
+.bottomCta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  padding: 2.5rem;
+  border: 1px solid $border;
+  border-radius: 4px;
+  background: $gold-dim;
+}
+
+.bottomText {
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: $cream-muted;
+}
+
+.bottomBtn {
+  @include btn-gold;
+  padding: 0.8rem 2rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bottomCta {
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: center;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

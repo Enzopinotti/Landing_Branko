@@ -1,0 +1,202 @@
+@use "../styles/variables" as *;
+
+.section {
+  padding: $space-2xl 0;
+  background: $black;
+  position: relative;
+}
+
+.inner {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 6rem;
+  align-items: start;
+}
+
+/* Left */
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  position: sticky;
+  top: 7rem;
+}
+
+.mono {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.monoLetter {
+  font-family: $font-heading;
+  font-size: 6rem;
+  font-weight: 300;
+  color: transparent;
+  -webkit-text-stroke: 1px $gold;
+  line-height: 1;
+  letter-spacing: -4px;
+  opacity: 0.6;
+}
+
+.credentials {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: $border;
+  border: 1px solid $border;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cred {
+  background: $black-card;
+  padding: 1.2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.credValue {
+  font-family: $font-heading;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: $gold;
+}
+
+.credLabel {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: $cream-muted;
+}
+
+.instaBadge {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 1rem;
+  border: 1px solid $border;
+  border-radius: 4px;
+  background: $black-card;
+}
+
+.instaIcon {
+  font-size: 1.4rem;
+  font-weight: 300;
+  color: $gold;
+  font-family: $font-heading;
+  width: 40px;
+  height: 40px;
+  border: 1px solid $gold;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.instaHandle {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: $cream;
+}
+
+.instaFollowers {
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 1px;
+  color: $cream-muted;
+}
+
+/* Right */
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.label {
+  @include label-style;
+  margin-bottom: 1.5rem;
+}
+
+.labelLine {
+  display: block;
+  width: 28px;
+  height: 1px;
+  background: $gold;
+}
+
+.title {
+  font-family: $font-heading;
+  font-size: clamp(3rem, 5vw, 5rem);
+  font-weight: 300;
+  line-height: 1.05;
+  color: $cream;
+  margin-bottom: 2.5rem;
+}
+
+.title em {
+  font-style: italic;
+  color: $gold;
+}
+
+.text {
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: $cream-muted;
+  line-height: 1.9;
+  margin-bottom: 1.5rem;
+}
+
+.text strong {
+  color: $cream;
+  font-weight: 500;
+}
+
+.philosophy {
+  position: relative;
+  margin: 2.5rem 0 3rem;
+  padding: 2rem 2rem 2rem 3rem;
+  border-left: 1px solid $gold;
+  background: $gold-dim;
+  border-radius: 0 4px 4px 0;
+}
+
+.quoteDecor {
+  position: absolute;
+  top: -0.5rem;
+  left: 1.5rem;
+  font-family: $font-heading;
+  font-size: 4rem;
+  color: $gold;
+  line-height: 1;
+  opacity: 0.4;
+}
+
+.quote {
+  font-family: $font-heading;
+  font-size: 1.3rem;
+  font-weight: 400;
+  font-style: italic;
+  color: $cream;
+  line-height: 1.6;
+  border: none;
+}
+
+.btn {
+  @include btn-gold;
+  align-self: flex-start;
+}
+
+@media (max-width: 900px) {
+  .inner {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  .left {
+    position: static;
+  }
+}

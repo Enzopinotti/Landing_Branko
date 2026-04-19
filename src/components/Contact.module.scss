@@ -1,0 +1,193 @@
+@use "../styles/variables" as *;
+
+.section {
+  padding: $space-2xl 0;
+  background: $black;
+  position: relative;
+  @include section-divider;
+}
+
+.inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6rem;
+  align-items: start;
+}
+
+/* Left */
+.left { display: flex; flex-direction: column; gap: 0; }
+
+.label {
+  @include label-style;
+  margin-bottom: 1.5rem;
+}
+
+.labelLine { display: block; width: 28px; height: 1px; background: $gold; }
+
+.title {
+  font-family: $font-heading;
+  font-size: clamp(3.5rem, 6vw, 6rem);
+  font-weight: 300;
+  line-height: 1.0;
+  color: $cream;
+  margin-bottom: 1.5rem;
+}
+
+.title em { font-style: italic; color: $gold; }
+
+.subtitle {
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: $cream-muted;
+  line-height: 1.8;
+  margin-bottom: 2.5rem;
+  max-width: 380px;
+}
+
+/* WhatsApp CTA */
+.waCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 2rem;
+  background: #25D366;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 2px;
+  margin-bottom: 2.5rem;
+  align-self: flex-start;
+  transition: background 0.25s, transform 0.25s $ease-out, box-shadow 0.25s;
+}
+
+.waCta:hover {
+  background: #1ebe5d;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(37, 211, 102, 0.3);
+}
+
+.waIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Locations */
+.locations {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.location {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.locationDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: $gold;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.locationCity {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $cream;
+  letter-spacing: 1px;
+}
+
+.locationAddr {
+  font-size: 0.78rem;
+  font-weight: 300;
+  color: $cream-muted;
+}
+
+/* Social */
+.social { padding-top: 1.5rem; border-top: 1px solid $border; }
+
+.socialLink {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: $cream-muted;
+  text-decoration: none;
+  transition: color 0.25s;
+}
+
+.socialLink:hover { color: $gold; }
+
+/* Right: FAQ */
+.right { display: flex; flex-direction: column; gap: 0; padding-top: 5.5rem; }
+
+.faqTitle {
+  font-family: $font-heading;
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: $cream;
+  margin-bottom: 2rem;
+}
+
+.faqs { display: flex; flex-direction: column; }
+
+.faq {
+  border-bottom: 1px solid $border;
+  overflow: hidden;
+}
+
+.faqQ {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.4rem 0;
+  background: none;
+  border: none;
+  color: $cream;
+  font-family: $font-body;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.25s;
+}
+
+.faqQ:hover { color: $gold; }
+.faqOpen .faqQ { color: $gold; }
+
+.faqToggle {
+  font-size: 1.3rem;
+  color: $gold;
+  flex-shrink: 0;
+  font-weight: 300;
+}
+
+.faqA {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s $ease-out;
+}
+
+.faqOpen .faqA { max-height: 200px; }
+
+.faqA p {
+  padding-bottom: 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 300;
+  color: $cream-muted;
+  line-height: 1.8;
+}
+
+@media (max-width: 900px) {
+  .inner { grid-template-columns: 1fr; gap: 3rem; }
+  .right { padding-top: 0; }
+}
