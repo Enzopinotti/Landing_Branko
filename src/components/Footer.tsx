@@ -1,4 +1,5 @@
 import styles from './Footer.module.scss'
+import brankoMonogram from '../assets/branko-monogram.svg'
 
 export default function Footer() {
   return (
@@ -8,7 +9,7 @@ export default function Footer() {
           {/* Brand */}
           <div className={styles.brand}>
             <div className={styles.logo}>
-              <span className={styles.logoMono}>BI</span>
+              <img src={brankoMonogram} alt="" aria-hidden="true" className={styles.logoMark} />
               <div>
                 <p className={styles.logoName}>BRANKO IRIART</p>
                 <p className={styles.logoSub}>Estética &amp; Armonización Facial</p>
