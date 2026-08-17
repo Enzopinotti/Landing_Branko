@@ -6,6 +6,8 @@
 
 Representar únicamente el contenido que Branko necesita administrar, sin convertir el panel en un constructor de páginas. El diseño, las animaciones y la composición visual permanecen en el repositorio de la landing.
 
+Los contenidos pueden referenciar imágenes mediante `media_id`. Los binarios nunca se almacenan en Sheets.
+
 ## 1. CMS_Settings
 
 Una única configuración activa para datos globales.
@@ -27,14 +29,9 @@ Campos conceptuales:
 - `personalized_metric`
 - `updated_at`
 
-Notas:
-
-- El teléfono se guarda normalizado para enlaces y puede tener una versión visible separada si hace falta.
-- Las métricas son texto administrable, no cálculos automáticos.
-
 ## 2. CMS_Content
 
-Contenido textual singleton por bloque. Cada registro identifica una pieza concreta del diseño mediante una `content_key` estable.
+Contenido textual singleton por bloque. Cada registro identifica una pieza concreta mediante una `content_key` estable.
 
 Campos conceptuales:
 
@@ -107,6 +104,7 @@ Campos conceptuales:
 - `description`
 - `tag`
 - `icon_key`
+- `image_media_id` opcional
 - `sort_order`
 - `status` (`draft` / `published` / `archived`)
 - `created_at`
@@ -115,9 +113,10 @@ Campos conceptuales:
 
 Reglas:
 
-- El panel puede crear, editar, ordenar, publicar y archivar tratamientos.
-- `icon_key` debe aceptar sólo un conjunto cerrado de íconos definidos por la landing.
-- No se permite HTML libre en `description`.
+- crear, editar, ordenar, publicar y archivar;
+- `icon_key` limitado a íconos soportados por la landing;
+- sin HTML libre en descripción;
+- una imagen puede reutilizarse mediante `image_media_id`.
 
 ## 4. CMS_Locations
 
@@ -131,17 +130,16 @@ Campos conceptuales:
 - `address`
 - `secondary_text`
 - `external_url`
+- `image_media_id` opcional
 - `sort_order`
 - `status`
 - `created_at`
 - `updated_at`
 - `archived_at`
 
-Inicialmente representa Ensenada y La Plata.
-
 ## 5. CMS_ResultCases
 
-Una fila por caso/texto dentro de la sección Resultados.
+Una fila por caso dentro de Resultados.
 
 Campos conceptuales:
 
@@ -149,13 +147,15 @@ Campos conceptuales:
 - `category`
 - `title`
 - `description`
+- `before_media_id` opcional
+- `after_media_id` opcional
 - `sort_order`
 - `status`
 - `created_at`
 - `updated_at`
 - `archived_at`
 
-En v1 no administra imágenes de antes/después. Las imágenes aprobadas permanecen como assets de la landing.
+Esta entidad sí contempla las imágenes administrables de antes/después cuando Branko entregue material real aprobado.
 
 ## 6. CMS_Testimonials
 
@@ -167,16 +167,12 @@ Campos conceptuales:
 - `display_name`
 - `text`
 - `service`
+- `avatar_media_id` opcional
 - `sort_order`
 - `status`
 - `created_at`
 - `updated_at`
 - `archived_at`
-
-Reglas:
-
-- Un testimonio sólo debe publicarse cuando haya sido validado por Branko.
-- El panel permite archivar sin eliminar historial.
 
 ## 7. CMS_FAQs
 
@@ -193,9 +189,44 @@ Campos conceptuales:
 - `updated_at`
 - `archived_at`
 
-## 8. _AuditLog
+## 8. CMS_Media
 
-Registro de cambios administrativos. Sólo lectura desde el sistema; no editable por Branko en v1.
+Biblioteca central de imágenes.
+
+Campos conceptuales:
+
+- `media_id` UUID
+- `file_id` identificador interno de Google Drive
+- `file_name`
+- `mime_type`
+- `file_size`
+- `public_url`
+- `drive_url` sólo para administración/soporte
+- `alt_text`
+- `entity_type` opcional
+- `entity_id` opcional
+- `sort_order`
+- `status`
+- `metadata_json`
+- `created_at`
+- `updated_at`
+- `archived_at`
+
+Reglas:
+
+- `media_id` es la referencia utilizada por las entidades del CMS;
+- `file_id` no sustituye la identidad lógica del registro;
+- base64 sólo existe durante el transporte del upload y no se persiste;
+- la imagen debe pasar validaciones de MIME y tamaño;
+- una imagen puede ser reutilizada por más de un campo/contenido;
+- `alt_text` debe poder editarse;
+- el panel debe poder seleccionar una imagen existente además de subir una nueva;
+- borrar una referencia de una entidad no implica borrar automáticamente el archivo de Drive;
+- la eliminación definitiva de un archivo requiere una operación explícita y validación de referencias.
+
+## 9. _AuditLog
+
+Registro de cambios administrativos.
 
 Campos conceptuales:
 
@@ -217,10 +248,12 @@ Acciones mínimas:
 - `publish`
 - `archive`
 - `restore`
+- `upload_media`
+- `change_password`
 
-## 9. _System
+## 10. _System
 
-Metadatos técnicos del CMS.
+Metadatos técnicos.
 
 Campos conceptuales:
 
@@ -236,7 +269,7 @@ Valores previstos:
 
 ## Bootstrap público esperado
 
-Conceptualmente la landing debería recibir un único objeto:
+Conceptualmente la landing recibe un único objeto:
 
 ```text
 site
@@ -246,35 +279,60 @@ treatments[]
 resultCases[]
 testimonials[]
 faqs[]
+media{}
 meta
 ```
 
+`media` puede resolverse como mapa indexado por `media_id` para evitar repetir metadata en cada entidad.
+
 Sólo se incluyen registros publicados y no archivados. Las colecciones llegan ordenadas por `sort_order`.
+
+## Workspace administrativo esperado
+
+El workspace del panel puede incluir:
+
+```text
+settings
+content
+locations[]
+treatments[]
+resultCases[]
+testimonials[]
+faqs[]
+media[]
+session/meta
+```
+
+El workspace no incluye secretos, hash, salt ni IDs de configuración sensibles.
 
 ## Fallback en frontend
 
-El repositorio `Landing_Branko` debe mantener un `defaultContent` con la misma forma que el bootstrap. Su propósito es:
+`Landing_Branko` mantiene `defaultContent` con la misma forma estructural que el bootstrap.
 
-- permitir desarrollo sin Apps Script;
+Sirve para:
+
+- desarrollar sin Apps Script;
 - evitar una landing vacía si el CMS falla;
-- actuar como snapshot conocido y seguro para publicación.
+- actuar como snapshot conocido para publicación.
 
-El fallback no reemplaza la base administrable: sólo protege la disponibilidad pública.
+Las imágenes administrables deben tener también un fallback estático cuando el diseño lo requiera.
 
-## Campos deliberadamente fuera del CMS v1
+## Fuera del modelo CMS v1
 
-- Colores.
-- Tipografías.
-- Animaciones.
-- Orden macro de secciones.
-- Componentes visuales.
-- Fotografías y videos.
-- Preloader.
-- Navbar como estructura.
-- Footer como estructura.
-- Sección adicional incluida en el presupuesto.
-- Agenda o turnos.
+- colores;
+- tipografías;
+- animaciones;
+- orden macro de secciones;
+- componentes visuales;
+- preloader;
+- estructura del navbar/footer;
+- edición gráfica de imágenes;
+- videos administrables;
+- agenda o turnos;
+- usuarios/roles múltiples.
+
+La sección adicional incluida comercialmente permanece fuera del CMS salvo ampliación expresa.
 
 ## Decisión pendiente antes de implementar
 
-Cuando Branko devuelva el relevamiento final, debemos mapear cada respuesta a este modelo y confirmar si alguno de los campos previstos deja de existir o necesita un campo nuevo. El schema definitivo se congela recién después de ese mapeo.
+Cuando Branko devuelva el relevamiento final debemos mapear cada respuesta a este modelo y marcar, campo por campo, cuáles inputs admiten imagen. Recién entonces se congela el schema v1.
