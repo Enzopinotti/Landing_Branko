@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import styles from "./Navbar.module.scss";
+import brankoMonogram from "../assets/branko-monogram.svg";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -55,11 +56,16 @@ export default function Navbar({ hideInitial = false }: { hideInitial?: boolean 
         <div className={styles.inner}>
           
           {/* Logo */}
-          <a ref={logoRef} href="#" className={styles.logo}>
-            <div className={styles.logoMono}>BI</div>
+          <a ref={logoRef} href="#" className={styles.logo} aria-label="Branko Iriart - Estética Facial">
+            <img
+              src={brankoMonogram}
+              alt=""
+              aria-hidden="true"
+              className={styles.logoMark}
+            />
             <div className={styles.logoText}>
-              <span className={styles.name}>Branko Iriart</span>
-              <span className={styles.tagline}>Estética Facial</span>
+              <span className={styles.name}>BRANKO IRIART</span>
+              <span className={styles.tagline}>ESTÉTICA FACIAL</span>
             </div>
           </a>
 
