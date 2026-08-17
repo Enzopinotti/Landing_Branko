@@ -4,6 +4,7 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import styles from "./Preloader.module.scss";
+import brankoMonogram from "../assets/branko-monogram.svg";
 
 interface PreloaderProps {
   onComplete: () => void;
@@ -21,7 +22,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
       },
     });
 
-    // 1. Apparición inicial del logo con resplandor
+    // 1. Aparición inicial del logo con resplandor
     tl.fromTo(
       [logoRef.current, glowRef.current],
       { 
@@ -73,8 +74,8 @@ export default function Preloader({ onComplete }: PreloaderProps) {
     <div ref={containerRef} className={styles.container}>
       <div ref={glowRef} className={styles.glow} />
       <div className={styles.content}>
-        <div ref={logoRef} className={styles.logo}>
-          BI
+        <div ref={logoRef} className={styles.logo} aria-label="Branko Iriart">
+          <img src={brankoMonogram} alt="" aria-hidden="true" className={styles.logoMark} />
         </div>
       </div>
     </div>
