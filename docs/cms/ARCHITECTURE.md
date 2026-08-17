@@ -1,112 +1,264 @@
-# Arquitectura inicial — CMS Branko Iriart
+# Arquitectura — CMS Branko Iriart
 
-> Documento de planificación. No contiene implementación funcional.
+> Documento rector de planificación. No contiene implementación funcional.
 
-## Objetivo
+## 1. Objetivo
 
-Convertir la landing de Branko en un sitio administrable sin alterar su identidad visual ni obligar al cliente a tocar código. La página pública y el panel deben consumir un único modelo de contenido, mientras Google Apps Script actúa solamente como backend/API y Google Sheets como persistencia liviana.
+Convertir la landing de Branko en un sitio administrable sin transformar el panel en un constructor de páginas ni mezclar responsabilidades.
 
-La solución se divide deliberadamente en dos repositorios:
+La premisa principal es:
 
-1. `Enzopinotti/Landing_Branko`
-   - Landing pública React/Vite.
-   - Panel privado React en una entrada independiente `/admin/`.
-   - Cliente de lectura/escritura contra Apps Script.
-   - Fallback local del contenido para que la web no quede vacía si el CMS no responde.
+**el CMS de Google Apps Script funciona como backend de la landing y del panel.**
 
-2. `Enzopinotti/Landing_Branko_CMS` (nuevo repositorio, recomendado privado)
-   - Código Google Apps Script administrado con `clasp`.
-   - API pública de contenido.
-   - API administrativa autenticada.
-   - Acceso a Google Sheets.
-   - Auditoría, caché, validaciones y setup inicial.
-   - Nunca renderiza el panel React.
+Apps Script gestiona datos, autenticación, sesiones, imágenes, validaciones, auditoría y persistencia. React gestiona toda la experiencia visual.
 
-## Principios heredados de implementaciones anteriores
+## 2. Dos repositorios, responsabilidades claras
 
-- Google Sheets es persistencia del CMS, no una base relacional general.
-- Los registros usan UUID estables; nunca se usa el número de fila como identidad.
+### `Enzopinotti/Landing_Branko`
+
+Responsabilidades:
+
+- landing pública React/Vite;
+- panel privado React;
+- SCSS y design system visual;
+- componentes y UX;
+- cliente HTTP/bridge hacia Apps Script;
+- fallback local del contenido público;
+- build final para hosting FTP.
+
+El panel vive en este repositorio y debe verse como una extensión natural de la landing: misma identidad dark/gold, mismas tipografías, ritmo visual, estados, botones y lenguaje de interfaz.
+
+### `Enzopinotti/Landing_Branko_CMS`
+
+Repositorio nuevo recomendado como `private`.
+
+Responsabilidades:
+
+- Google Apps Script administrado mediante `clasp`;
+- API pública de contenido;
+- API administrativa autenticada;
+- Google Sheets como persistencia de contenido;
+- Google Drive como almacenamiento de imágenes administrables;
+- autenticación y sesiones;
+- setup inicial;
+- validaciones;
+- auditoría;
+- caché;
+- versionado y despliegue del Web App.
+
+Apps Script **no renderiza HTML del panel** y no contiene estilos de la interfaz.
+
+## 3. Principios heredados de implementaciones anteriores
+
+- Google Sheets funciona como persistencia de este CMS, no como una base relacional genérica.
+- Cada entidad usa UUID estable; nunca se usa el número de fila como identidad.
 - Los secretos viven en `PropertiesService`, nunca en Sheets ni en el frontend.
 - Las sesiones administrativas son temporales.
-- Las escrituras se serializan con `LockService`.
+- Las escrituras se protegen con `LockService`.
 - El contenido público se cachea con `CacheService`.
-- Los cambios administrativos generan una entrada de auditoría.
-- `clasp` es el flujo normal de desarrollo; el editor web de Apps Script no es la fuente de verdad.
+- Toda modificación administrativa relevante genera auditoría.
+- `clasp` es el flujo normal de desarrollo del backend.
+- GitHub es la fuente de verdad del código de Apps Script.
 - `.clasp.json`, `.clasprc.json`, tokens y secretos no se versionan.
-- `clasp push` actualiza el proyecto, pero una versión publicada del Web App debe redeployarse explícitamente cuando corresponda.
+- una actualización mediante `clasp push` y una actualización del deployment productivo son conceptos distintos y deben documentarse.
+- ningún cambio visual o de layout puede ejecutarse desde el CMS.
 
-## Flujo público
+## 4. Flujo público
 
 1. El usuario abre la landing.
-2. La aplicación muestra inmediatamente el contenido local de respaldo.
-3. El frontend solicita un único `bootstrap` al CMS.
-4. Si el CMS responde correctamente, reemplaza/mezcla el contenido local con el contenido publicado.
-5. Si Apps Script o Sheets fallan, la landing continúa funcionando con el último contenido incorporado al build.
+2. React dispone de un `defaultContent` local compatible con el contrato del CMS.
+3. El frontend solicita un único `bootstrap` público.
+4. Si el CMS responde, el contenido publicado reemplaza/mezcla el fallback.
+5. Si Apps Script, Sheets o Drive tienen una falla temporal, la landing conserva una versión utilizable mediante fallback.
 
-Esto evita que una caída, cuota o error del CMS deje la web pública sin contenido.
+La disponibilidad de la web pública no debe depender exclusivamente de que Apps Script responda en ese instante.
 
-## Flujo administrativo
+## 5. Panel administrativo
 
-1. Branko entra a `/admin/`.
-2. Inicia sesión con una contraseña administrativa.
-3. Apps Script valida la contraseña contra un hash + salt guardados en Script Properties.
-4. Se crea una sesión temporal y se devuelve un token opaco.
-5. El panel obtiene el workspace editable.
-6. Branko modifica únicamente campos permitidos.
-7. Apps Script valida, escribe en Sheets, registra auditoría e invalida la caché pública.
-8. La landing recibe el contenido actualizado en la siguiente lectura del bootstrap.
+El panel será React + TypeScript + SCSS dentro de `Landing_Branko`.
 
-## Transporte entre React y Apps Script
+### Entrada
 
-Apps Script se publicará como Web App con `doGet`/`doPost` y `ContentService`.
-
-Como el panel y Apps Script viven en orígenes diferentes y Apps Script no debe depender de secretos en URLs, la implementación administrativa debe reutilizar el patrón ya probado en Fedes:
-
-- POST para comandos administrativos.
-- Token de sesión dentro del body, nunca en query params.
-- `requestId` opaco para correlacionar la operación.
-- recuperación del resultado mediante una lectura controlada/JSONP si el navegador no puede leer directamente la respuesta cross-origin.
-
-El endpoint público `bootstrap` también debe admitir una forma de consumo compatible con hosting estático.
-
-## Panel en hosting FTP
-
-La landing actual no usa router. Para no depender de reglas especiales del servidor, el panel se planifica como una segunda entrada de Vite que genere físicamente:
+Se planifica como una segunda entrada física de Vite:
 
 `dist/admin/index.html`
 
-Así `https://dominio/admin/` funciona aunque el hosting sea estático y no tenga fallback SPA configurado.
+Esto permite publicar `/admin/` en un hosting estático/FTP sin depender de reglas SPA o rewrites del servidor.
 
-## Alcance funcional del panel v1
+### Identidad visual
 
-Editable por Branko:
+El panel debe reutilizar el lenguaje visual de la landing:
 
-- Textos principales de la landing.
-- Tratamientos.
-- Preguntas frecuentes.
-- Datos de contacto.
-- Ubicaciones.
-- Testimonios.
-- Métricas visibles.
-- Enlaces/CTAs.
-- Casos o textos de la sección Resultados que se definan para la versión final.
+- dark background;
+- dorado de marca;
+- tipografías existentes;
+- superficies, bordes y estados coherentes;
+- responsive desktop/tablet/mobile;
+- animaciones sutiles, no decorativas en exceso;
+- feedback claro de guardado, carga, error y éxito.
 
-Fuera del panel v1:
+No se diseña un dashboard genérico ajeno a la marca.
 
-- Cambios de layout o diseño.
-- Crear secciones arbitrarias.
-- Agenda/turnos.
-- Campañas o CRM.
-- Gestión de usuarios múltiples.
-- Carga/edición avanzada de imágenes.
+## 6. Login y contraseña
 
-La sección adicional incluida en el presupuesto se diseña y carga una vez, pero no queda administrable salvo nueva definición de alcance.
+Existe una única cuenta administrativa en v1.
 
-## Recursos Google
+### Contraseña inicial
+
+La primera contraseña se crea desde el backend de Apps Script durante el setup o mediante una función administrativa ejecutada explícitamente.
+
+Nunca se escribe en código versionado ni en Sheets.
+
+El backend guarda únicamente:
+
+- hash;
+- salt;
+
+ambos gestionados mediante `PropertiesService`.
+
+### Login
+
+El formulario incluye:
+
+- contraseña;
+- botón entrar;
+- control de mostrar/ocultar contraseña mediante icono de ojo;
+- estado de carga;
+- error de credenciales sin filtrar información interna.
+
+El ojo sólo cambia la presentación del input; no altera el tratamiento seguro del valor.
+
+### Sesión
+
+Tras un login correcto:
+
+- Apps Script emite un token opaco;
+- la sesión tiene vencimiento;
+- la sesión se valida en cada operación administrativa;
+- logout invalida la sesión;
+- una sesión vencida devuelve al login.
+
+### Cambio de contraseña desde el panel
+
+Forma parte de v1.
+
+Branko debe poder ir a Seguridad / Cambiar contraseña e ingresar:
+
+- contraseña actual;
+- nueva contraseña;
+- repetir nueva contraseña.
+
+Los tres inputs tienen mostrar/ocultar con ojo.
+
+El frontend valida coincidencia y requisitos básicos; Apps Script vuelve a validar todo server-side.
+
+El backend sólo cambia la contraseña si la actual es correcta. Luego reemplaza hash + salt y registra la operación en auditoría.
+
+Nunca se devuelve ni se puede recuperar la contraseña existente.
+
+## 7. Imágenes y biblioteca de medios
+
+Google Drive sí forma parte del CMS v1.
+
+El panel podrá tener inputs de imagen en distintos módulos. No se acoplará la subida directamente a una sección específica: se implementará una capa de medios reutilizable.
+
+Flujo conceptual:
+
+1. Branko selecciona una imagen.
+2. React valida preliminarmente tipo y tamaño.
+3. El archivo se envía autenticado al backend.
+4. Apps Script vuelve a validar tipo, tamaño y contenido recibido.
+5. Drive guarda el archivo dentro de una carpeta exclusiva del CMS.
+6. Apps Script verifica que el archivo pueda usarse en la web pública.
+7. Se crea un registro en `CMS_Media`.
+8. El backend devuelve `media_id` + URL pública + metadata.
+9. El contenido referencia el `media_id`; no se guarda base64 en Sheets.
+
+### Reglas mínimas de media
+
+- sólo imágenes en v1;
+- MIME permitido mediante allowlist;
+- límite máximo de peso;
+- nombre normalizado;
+- UUID/`media_id` independiente del ID de Drive;
+- `file_id` de Drive sólo se maneja desde backend/admin;
+- `alt_text` editable;
+- tamaño y MIME persistidos;
+- relación opcional `entity_type` / `entity_id`;
+- posibilidad de reutilizar una imagen;
+- auditoría de uploads y cambios;
+- no almacenar blobs/base64 en Sheets.
+
+La UX del input debe incluir preview, reemplazar imagen, quitar selección y errores entendibles.
+
+## 8. Transporte React ↔ Apps Script y CORS
+
+Este punto es requisito arquitectónico, no un detalle posterior.
+
+El navegador no debe depender de que Apps Script se comporte como una API REST tradicional con headers CORS personalizados.
+
+Se reutilizará el patrón ya probado:
+
+### Lecturas públicas
+
+- endpoint `bootstrap` compatible con consumo desde hosting estático;
+- soporte JSON/JSONP controlado según la implementación final;
+- callback validado estrictamente si se usa JSONP;
+- ningún secreto en el endpoint público.
+
+### Escrituras y operaciones admin
+
+- `POST` hacia el Web App;
+- token de sesión dentro del body, nunca en query params;
+- envío compatible con `no-cors` cuando sea necesario;
+- `requestId` opaco por operación;
+- `clientSecret` efímero por operación;
+- Apps Script procesa y guarda temporalmente el resultado en `CacheService`;
+- React recupera ese resultado mediante un endpoint de resultado controlado;
+- la respuesta se consume una sola vez y expira rápidamente.
+
+Esto evita bloquear el panel por preflight/CORS y evita poner la sesión administrativa en una URL.
+
+El transporte definitivo se implementa una sola vez como cliente reutilizable; los módulos del panel no conocen los detalles del bridge.
+
+## 9. Datos administrables en v1
+
+- textos principales;
+- tratamientos;
+- FAQs;
+- datos de contacto;
+- ubicaciones;
+- testimonios;
+- métricas visibles;
+- enlaces y CTAs;
+- casos/resultados;
+- imágenes definidas como administrables en cada módulo;
+- contraseña administrativa.
+
+## 10. Fuera del CMS v1
+
+- rediseñar layouts;
+- elegir colores o tipografías;
+- crear componentes visuales arbitrarios;
+- modificar animaciones;
+- editar código;
+- ejecutar scripts desde el panel;
+- agenda/turnos;
+- CRM;
+- campañas;
+- usuarios múltiples/roles;
+- video administrable salvo ampliación explícita;
+- edición gráfica de imágenes.
+
+La sección adicional incluida comercialmente se diseña/carga una vez y no pasa a ser administrable salvo decisión posterior.
+
+## 11. Recursos Google
 
 ### Spreadsheet
 
-Nombre recomendado: `Branko Iriart · CMS`
+Nombre recomendado:
+
+`Branko Iriart · CMS`
 
 Hojas previstas:
 
@@ -119,29 +271,46 @@ Hojas previstas:
 - `CMS_ResultCases`
 - `CMS_Testimonials`
 - `CMS_FAQs`
+- `CMS_Media`
 
-No se necesita Google Drive para el MVP si las imágenes permanecen estáticas en la landing.
+### Drive
 
-## Seguridad mínima obligatoria
+Carpeta recomendada:
 
-- Repositorio CMS privado.
-- Contraseña hasheada + salt en Script Properties.
-- Session token temporal en `CacheService`.
-- Sin contraseña, tokens ni IDs sensibles versionados.
-- Validación server-side de todos los campos editables.
-- Lista explícita de acciones administrativas permitidas.
-- Auditoría de login y modificaciones.
-- Sanitización de URLs y textos antes de devolverlos al frontend.
-- El panel nunca tiene permisos para ejecutar código ni modificar estructura del sitio.
+`Branko Iriart · CMS Media`
 
-## API conceptual
+Su ID queda en Script Properties.
 
-Pública:
+No debe dependerse de buscar carpetas por nombre en cada request.
+
+## 12. Seguridad mínima obligatoria
+
+- repositorio CMS privado;
+- contraseña nunca persistida en claro;
+- hash + salt en Script Properties;
+- verificación de contraseña actual para cambiarla;
+- token de sesión temporal;
+- token administrativo nunca en query string;
+- secretos efímeros para el bridge HTTP;
+- validación server-side de todos los payloads;
+- allowlist de operaciones y campos;
+- allowlist de MIME de imágenes;
+- límites de tamaño;
+- sanitización de texto y URLs;
+- `LockService` para escrituras;
+- auditoría de login, cambios, uploads y cambio de contraseña;
+- errores públicos sin stack traces ni detalles internos;
+- invalidación de caché tras cambios;
+- ningún secreto versionado.
+
+## 13. API conceptual
+
+### Pública
 
 - `health`
 - `bootstrap`
 
-Administrativa:
+### Administrativa
 
 - `login`
 - `logout`
@@ -153,27 +322,31 @@ Administrativa:
 - CRUD limitado de casos/resultados
 - CRUD limitado de testimonios
 - CRUD limitado de FAQs
-- `changePassword` (segunda etapa si hace falta)
+- `uploadMedia`
+- operaciones de media permitidas
+- `changePassword`
 
-No se definen todavía rutas ni payloads finales: primero debe cerrarse el modelo de contenido.
+No se congelan todavía nombres de rutas ni payloads concretos; primero se cierra el schema.
 
-## Estrategia de publicación
+## 14. Estrategia de publicación
 
 ### Landing
 
-- `main` representa la versión publicable.
-- Los cambios del CMS se desarrollan en branch.
-- Se genera build completo incluyendo `/admin/`.
-- Se sube por FTP al hosting ya contratado.
+- `main` representa la versión publicable;
+- desarrollo del CMS/panel en ramas específicas;
+- build completo incluye landing + `/admin/`;
+- publicación por FTP.
 
 ### Apps Script
 
-- Desarrollo local con `clasp`.
-- GitHub es la fuente de verdad del código.
-- `clasp push` para sincronizar fuentes.
-- versión + redeploy explícito para actualizar el Web App productivo.
+- desarrollo local con `clasp`;
+- GitHub como fuente de verdad;
+- setup inicial explícito;
+- `clasp push` para sincronizar código;
+- versionado/deploy explícito del Web App;
+- Script Properties para IDs y secretos.
 
-## Repositorio nuevo recomendado
+## 15. Repositorio nuevo recomendado
 
 Nombre:
 
@@ -185,27 +358,16 @@ Visibilidad:
 
 Descripción:
 
-`Backend CMS de la landing de Branko Iriart con Google Apps Script, Google Sheets y despliegue mediante clasp.`
+`Backend CMS de la landing de Branko Iriart con Google Apps Script, Google Sheets, Google Drive y despliegue mediante clasp.`
 
-No inicializar con código de ejemplo. Puede crearse vacío o solamente con README; la estructura se define después de aprobar este documento.
+## 16. Regla para comenzar código
 
-## Orden de implementación
+No implementar todavía archivos funcionales de Apps Script ni modificar los componentes productivos de la landing hasta cerrar:
 
-1. Crear el repositorio `Landing_Branko_CMS`.
-2. Crear el proyecto standalone de Apps Script con `clasp`.
-3. Crear el Spreadsheet y guardar su ID en Script Properties.
-4. Implementar schema + setup idempotente.
-5. Implementar DB helpers, auditoría, validaciones y seguridad.
-6. Implementar `health` y `bootstrap`.
-7. Extraer en la landing un único contrato `SiteContent` y fallback local.
-8. Conectar la landing pública al bootstrap.
-9. Crear `/admin/` en React.
-10. Implementar login y workspace.
-11. Agregar edición por módulos.
-12. Validar build FTP + Web App + fallback.
-13. Cargar contenido definitivo de Branko.
-14. Publicar y documentar recuperación/mantenimiento.
+1. modelo de contenido;
+2. modelo de media;
+3. seguridad;
+4. contrato de transporte;
+5. roadmap por bloques.
 
-## Regla para comenzar código
-
-No implementar archivos de Apps Script ni modificar componentes de la landing hasta cerrar el modelo de contenido y la responsabilidad exacta de cada hoja. Este documento es la base de esa decisión.
+Esos documentos conforman la especificación inicial del CMS.
