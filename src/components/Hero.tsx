@@ -1,4 +1,4 @@
-import { usePublicContent } from '@/cms/publicContent'
+import { usePublicContent } from '../cms/publicContent'
 import { HeroGeometric } from './ui/shape-landing-hero'
 
 export default function Hero() {
