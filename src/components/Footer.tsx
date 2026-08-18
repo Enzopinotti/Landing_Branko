@@ -12,7 +12,7 @@ export default function Footer() {
               <img src={brankoMonogram} alt="" aria-hidden="true" className={styles.logoMark} />
               <div>
                 <p className={styles.logoName}>BRANKO IRIART</p>
-                <p className={styles.logoSub}>Estética &amp; Armonización Facial</p>
+                <p className={styles.logoSub}>ESTÉTICA FACIAL</p>
               </div>
             </div>
             <p className={styles.tagline}>
