@@ -8,10 +8,19 @@ import type {
   CmsAdminResultEnvelope,
   CmsCollectionKey,
   CmsLoginResponse,
+  CmsMedia,
   CmsMediaLink,
+  CmsMediaSectionData,
   CmsMutationResponse,
+  CmsOverviewData,
+  CmsOverviewResponse,
   CmsPublicBootstrapResponse,
+  CmsSectionKey,
+  CmsSectionResponse,
   CmsSettings,
+  CmsStatus,
+  CmsStatusSummary,
+  CmsWorkspaceData,
   CmsWorkspaceResponse,
 } from './types'
 
@@ -107,20 +116,76 @@ async function adminCommand<T>(operation: string, token: string, payload: Record
     method: 'POST',
     mode: 'no-cors',
     redirect: 'follow',
-    headers: {
-      'Content-Type': 'text/plain;charset=UTF-8',
-    },
-    body: JSON.stringify({
-      action: 'adminCommand',
-      operation,
-      token,
-      payload,
-      requestId,
-      clientSecret,
-    }),
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify({ action: 'adminCommand', operation, token, payload, requestId, clientSecret }),
   })
 
   return pollAdminResult<T>(requestId, clientSecret)
+}
+
+function statusSummary(rows: Array<{ status?: CmsStatus; archived_at?: string }>): CmsStatusSummary {
+  return rows.reduce<CmsStatusSummary>((summary, row) => {
+    summary.total += 1
+    if (row.status === 'published') summary.published += 1
+    else if (row.status === 'archived' || row.archived_at) summary.archived += 1
+    else summary.draft += 1
+    return summary
+  }, { total: 0, published: 0, draft: 0, archived: 0 })
+}
+
+function overviewFromWorkspace(workspace: CmsWorkspaceData): CmsOverviewData {
+  return {
+    settings: workspace.settings[0] || {},
+    counts: {
+      content: statusSummary(workspace.content),
+      treatments: statusSummary(workspace.treatments),
+      locations: statusSummary(workspace.locations),
+      resultCases: statusSummary(workspace.resultCases),
+      testimonials: statusSummary(workspace.testimonials),
+      faqs: statusSummary(workspace.faqs),
+      media: statusSummary(workspace.media),
+    },
+    recentActivity: (workspace.activity || []).slice(0, 8),
+    session: workspace.session,
+  }
+}
+
+function sectionFromWorkspace(workspace: CmsWorkspaceData, key: CmsSectionKey) {
+  switch (key) {
+    case 'settings': return workspace.settings
+    case 'content': return workspace.content
+    case 'treatments': return workspace.treatments
+    case 'locations': return workspace.locations
+    case 'resultCases': return workspace.resultCases
+    case 'testimonials': return workspace.testimonials
+    case 'faqs': return workspace.faqs
+    case 'media': return { media: workspace.media, mediaLinks: workspace.mediaLinks } satisfies CmsMediaSectionData
+    case 'activity': return workspace.activity || []
+  }
+}
+
+function unsupportedOperation(error: unknown) {
+  return error instanceof CmsClientError && (
+    error.code === 'INVALID_ADMIN_OPERATION' ||
+    error.message.toLowerCase().includes('operación administrativa inválida')
+  )
+}
+
+export function isCmsAuthError(error: unknown) {
+  if (!(error instanceof Error)) return false
+  const value = error.message.toLowerCase()
+  return value.includes('sesión vencida') || value.includes('sesión inválida')
+}
+
+let legacyWorkspacePromise: Promise<CmsWorkspaceData> | null = null
+
+async function legacyWorkspace(token: string) {
+  if (!legacyWorkspacePromise) {
+    legacyWorkspacePromise = cmsClient.workspace(token).finally(() => {
+      window.setTimeout(() => { legacyWorkspacePromise = null }, 1500)
+    })
+  }
+  return legacyWorkspacePromise
 }
 
 export const cmsClient = {
@@ -144,6 +209,28 @@ export const cmsClient = {
     return result
   },
 
+  async overview(token: string) {
+    try {
+      const result = await adminCommand<CmsOverviewResponse>('overview', token, {})
+      if (!result.success || !result.data) throw errorFromResult(result, 'No se pudo cargar el resumen.')
+      return result.data
+    } catch (error) {
+      if (!unsupportedOperation(error)) throw error
+      return overviewFromWorkspace(await legacyWorkspace(token))
+    }
+  },
+
+  async section<T>(token: string, sectionKey: CmsSectionKey): Promise<T> {
+    try {
+      const result = await adminCommand<CmsSectionResponse<T>>('section', token, { sectionKey })
+      if (!result.success || result.data === undefined) throw errorFromResult(result, 'No se pudo cargar la sección.')
+      return result.data
+    } catch (error) {
+      if (!unsupportedOperation(error)) throw error
+      return sectionFromWorkspace(await legacyWorkspace(token), sectionKey) as T
+    }
+  },
+
   async workspace(token: string) {
     const result = await adminCommand<CmsWorkspaceResponse>('workspace', token, {})
     if (!result.success || !result.data) throw errorFromResult(result, 'No se pudo cargar el panel.')
@@ -151,10 +238,7 @@ export const cmsClient = {
   },
 
   async changePassword(token: string, currentPassword: string, newPassword: string) {
-    const result = await adminCommand<CmsMutationResponse>('changePassword', token, {
-      currentPassword,
-      newPassword,
-    })
+    const result = await adminCommand<CmsMutationResponse>('changePassword', token, { currentPassword, newPassword })
     if (!result.success || !result.token || !result.expiresIn) throw errorFromResult(result, 'No se pudo cambiar la contraseña.')
     return result
   },
@@ -185,19 +269,25 @@ export const cmsClient = {
 
   async archiveRecord(token: string, tableKey: CmsCollectionKey, id: string) {
     const result = await adminCommand<CmsMutationResponse>('archiveRecord', token, { tableKey, id })
-    if (!result.success) throw errorFromResult(result, 'No se pudo archivar el registro.')
-    return result
+    if (!result.success || !result.record) throw errorFromResult(result, 'No se pudo archivar el registro.')
+    return result.record
   },
 
   async restoreRecord(token: string, tableKey: CmsCollectionKey, id: string) {
     const result = await adminCommand<CmsMutationResponse>('restoreRecord', token, { tableKey, id })
-    if (!result.success) throw errorFromResult(result, 'No se pudo restaurar el registro.')
-    return result
+    if (!result.success || !result.record) throw errorFromResult(result, 'No se pudo restaurar el registro.')
+    return result.record
   },
 
   async uploadMedia(token: string, payload: Record<string, unknown>) {
     const result = await adminCommand<CmsMutationResponse>('uploadMedia', token, payload)
     if (!result.success || !result.media) throw errorFromResult(result, 'No se pudo subir la imagen.')
+    return result.media
+  },
+
+  async updateMedia(token: string, mediaId: string, altText: string) {
+    const result = await adminCommand<CmsMutationResponse>('updateMedia', token, { mediaId, altText })
+    if (!result.success || !result.media) throw errorFromResult(result, 'No se pudo actualizar la imagen.')
     return result.media
   },
 
@@ -216,6 +306,12 @@ export const cmsClient = {
   async archiveMedia(token: string, mediaId: string) {
     const result = await adminCommand<CmsMutationResponse>('archiveMedia', token, { mediaId })
     if (!result.success) throw errorFromResult(result, 'No se pudo archivar la imagen.')
-    return result
+    return result.media as CmsMedia | undefined
+  },
+
+  async restoreMedia(token: string, mediaId: string) {
+    const result = await adminCommand<CmsMutationResponse>('restoreMedia', token, { mediaId })
+    if (!result.success) throw errorFromResult(result, 'No se pudo restaurar la imagen.')
+    return result.media as CmsMedia | undefined
   },
 }

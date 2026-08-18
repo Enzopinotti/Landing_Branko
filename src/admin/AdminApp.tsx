@@ -1,59 +1,74 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  CircleCheck,
+  Activity,
+  CircleHelp,
   Eye,
   EyeOff,
-  Files,
-  Image as ImageIcon,
+  FileText,
+  Images,
   LayoutDashboard,
-  LoaderCircle,
   LogOut,
+  MapPin,
+  Menu,
+  MessageSquareQuote,
   RefreshCw,
-  Save,
   Settings2,
   ShieldCheck,
+  Sparkles,
+  X,
 } from 'lucide-react'
 import brankoMonogram from '@/assets/branko-monogram.svg'
-import { cmsClient, CmsClientError } from '@/cms/client'
-import {
-  clearAdminSession,
-  getOrCreateClientId,
-  readAdminSession,
-  saveAdminSession,
-} from '@/cms/session'
-import type { CmsSettings, CmsWorkspaceData } from '@/cms/types'
+import { cmsClient, CmsClientError, isCmsAuthError } from '@/cms/client'
+import { clearAdminSession, getOrCreateClientId, readAdminSession, saveAdminSession } from '@/cms/session'
+import type {
+  CmsAuditRecord,
+  CmsCollectionKey,
+  CmsCollectionRecord,
+  CmsContentRecord,
+  CmsMedia,
+  CmsMediaLink,
+  CmsMediaSectionData,
+  CmsOverviewData,
+  CmsSectionData,
+  CmsSectionKey,
+  CmsSettings,
+} from '@/cms/types'
+import { collectionDefinitions, navGroups, type AdminView, viewToSection } from './adminConfig'
+import { SectionLoader, Spinner, ToastRegion, type ToastData } from './components/Ui'
 import styles from './AdminApp.module.scss'
 
-type View = 'overview' | 'general' | 'content' | 'media' | 'security'
+const OverviewView = lazy(() => import('./views/OverviewView'))
+const GeneralView = lazy(() => import('./views/GeneralView'))
+const ContentView = lazy(() => import('./views/ContentView'))
+const CollectionView = lazy(() => import('./views/CollectionView'))
+const MediaView = lazy(() => import('./views/MediaView'))
+const ActivityView = lazy(() => import('./views/ActivityView'))
+const SecurityView = lazy(() => import('./views/SecurityView'))
+
 type AuthState = 'checking' | 'signedOut' | 'signedIn'
+type CacheEntry = { data: CmsSectionData; loadedAt: number }
 
-const navItems: Array<{
-  id: View
-  label: string
-  description: string
-  icon: typeof LayoutDashboard
-}> = [
-  { id: 'overview', label: 'Resumen', description: 'Estado general', icon: LayoutDashboard },
-  { id: 'general', label: 'Datos generales', description: 'Contacto y métricas', icon: Settings2 },
-  { id: 'content', label: 'Contenido', description: 'Colecciones editables', icon: Files },
-  { id: 'media', label: 'Biblioteca', description: 'Imágenes del sitio', icon: ImageIcon },
-  { id: 'security', label: 'Seguridad', description: 'Acceso al panel', icon: ShieldCheck },
-]
+const CACHE_TTL_MS = 45_000
 
-const emptySettings: Partial<CmsSettings> = {
-  site_name: '',
-  professional_name: '',
-  professional_license: '',
-  whatsapp_number: '',
-  whatsapp_booking_message: '',
-  whatsapp_consult_message: '',
-  instagram_handle: '',
-  instagram_url: '',
-  patients_metric: '',
-  followers_metric: '',
-  treatments_metric: '',
-  personalized_metric: '',
-  status: 'published',
+const iconByView: Record<AdminView, typeof LayoutDashboard> = {
+  overview: LayoutDashboard,
+  general: Settings2,
+  content: FileText,
+  treatments: Sparkles,
+  resultCases: Images,
+  testimonials: MessageSquareQuote,
+  locations: MapPin,
+  faqs: CircleHelp,
+  media: Images,
+  activity: Activity,
+  security: ShieldCheck,
+}
+
+const validViews = new Set<AdminView>(['overview', 'general', 'content', 'treatments', 'resultCases', 'testimonials', 'locations', 'faqs', 'media', 'activity', 'security'])
+
+function viewFromHash(): AdminView {
+  const value = window.location.hash.replace(/^#\/?/, '') as AdminView
+  return validViews.has(value) ? value : 'overview'
 }
 
 function messageFromError(error: unknown) {
@@ -62,178 +77,332 @@ function messageFromError(error: unknown) {
   return 'Ocurrió un error inesperado.'
 }
 
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(new Error('No se pudo leer la imagen.'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function upsertById<T extends Record<string, unknown>>(rows: T[], record: T, idField: string) {
+  const id = String(record[idField] ?? '')
+  const index = rows.findIndex((row) => String(row[idField] ?? '') === id)
+  if (index === -1) return [...rows, record]
+  return rows.map((row, rowIndex) => rowIndex === index ? record : row)
+}
+
 function AdminApp() {
   const [authState, setAuthState] = useState<AuthState>('checking')
   const [sessionToken, setSessionToken] = useState('')
-  const [workspace, setWorkspace] = useState<CmsWorkspaceData | null>(null)
-  const [activeView, setActiveView] = useState<View>('overview')
+  const [activeView, setActiveView] = useState<AdminView>(() => viewFromHash())
+  const [overview, setOverview] = useState<CmsOverviewData | null>(null)
+  const [overviewLoading, setOverviewLoading] = useState(false)
+  const [cache, setCache] = useState<Partial<Record<CmsSectionKey, CacheEntry>>>({})
+  const [loadingSections, setLoadingSections] = useState<Partial<Record<CmsSectionKey, boolean>>>({})
+  const [sectionErrors, setSectionErrors] = useState<Partial<Record<CmsSectionKey, string>>>({})
+  const [mutationBusy, setMutationBusy] = useState(false)
+  const [loginBusy, setLoginBusy] = useState(false)
+  const [loginError, setLoginError] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [loginBusy, setLoginBusy] = useState(false)
-  const [pageBusy, setPageBusy] = useState(false)
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
-  const [settingsDraft, setSettingsDraft] = useState<Partial<CmsSettings>>(emptySettings)
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showSecurityPasswords, setShowSecurityPasswords] = useState(false)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [toasts, setToasts] = useState<ToastData[]>([])
+  const inflight = useRef<Partial<Record<CmsSectionKey, Promise<CmsSectionData>>>>({})
 
-  const syncWorkspace = async (token: string) => {
-    const next = await cmsClient.workspace(token)
-    setWorkspace(next)
-    setSettingsDraft({ ...emptySettings, ...(next.settings[0] || {}) })
-    return next
-  }
+  const pushToast = useCallback((type: ToastData['type'], message: string) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    setToasts((current) => [...current, { id, type, message }])
+    window.setTimeout(() => setToasts((current) => current.filter((toast) => toast.id !== id)), 4200)
+  }, [])
+
+  const signOutLocally = useCallback(() => {
+    clearAdminSession()
+    setSessionToken('')
+    setOverview(null)
+    setCache({})
+    setAuthState('signedOut')
+    setActiveView('overview')
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/overview`)
+  }, [])
+
+  const handleAsyncError = useCallback((error: unknown, fallback?: string) => {
+    if (isCmsAuthError(error)) {
+      signOutLocally()
+      pushToast('error', 'La sesión venció. Volvé a ingresar.')
+      return
+    }
+    pushToast('error', messageFromError(error) || fallback || 'No se pudo completar la operación.')
+  }, [pushToast, signOutLocally])
+
+  const loadOverview = useCallback(async (token: string, force = false) => {
+    if (!force && overview) return overview
+    setOverviewLoading(true)
+    try {
+      const next = await cmsClient.overview(token)
+      setOverview(next)
+      return next
+    } finally {
+      setOverviewLoading(false)
+    }
+  }, [overview])
+
+  const loadSection = useCallback(async <T extends CmsSectionData>(sectionKey: CmsSectionKey, force = false): Promise<T> => {
+    const existing = cache[sectionKey]
+    if (!force && existing && Date.now() - existing.loadedAt < CACHE_TTL_MS) return existing.data as T
+    if (!force && inflight.current[sectionKey]) return inflight.current[sectionKey] as Promise<T>
+    if (!sessionToken) throw new Error('Sesión no disponible.')
+
+    setLoadingSections((current) => ({ ...current, [sectionKey]: true }))
+    setSectionErrors((current) => ({ ...current, [sectionKey]: '' }))
+    const request = cmsClient.section<T>(sessionToken, sectionKey)
+      .then((data) => {
+        setCache((current) => ({ ...current, [sectionKey]: { data, loadedAt: Date.now() } }))
+        return data
+      })
+      .catch((error) => {
+        setSectionErrors((current) => ({ ...current, [sectionKey]: messageFromError(error) }))
+        throw error
+      })
+      .finally(() => {
+        setLoadingSections((current) => ({ ...current, [sectionKey]: false }))
+        delete inflight.current[sectionKey]
+      })
+    inflight.current[sectionKey] = request as Promise<CmsSectionData>
+    return request
+  }, [cache, sessionToken])
+
+  const refreshOverviewInBackground = useCallback(() => {
+    if (!sessionToken) return
+    cmsClient.overview(sessionToken).then(setOverview).catch(() => undefined)
+  }, [sessionToken])
+
+  const setSectionData = useCallback((sectionKey: CmsSectionKey, data: CmsSectionData) => {
+    setCache((current) => ({ ...current, [sectionKey]: { data, loadedAt: Date.now() } }))
+  }, [])
+
+  useEffect(() => {
+    const onHashChange = () => setActiveView(viewFromHash())
+    window.addEventListener('hashchange', onHashChange)
+    if (!window.location.hash) window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/overview`)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
 
   useEffect(() => {
     let active = true
     const stored = readAdminSession()
     if (!stored) {
       setAuthState('signedOut')
-      return () => {
-        active = false
-      }
+      return () => { active = false }
     }
-
     setSessionToken(stored.token)
-    syncWorkspace(stored.token)
-      .then(() => {
-        if (active) setAuthState('signedIn')
+    cmsClient.overview(stored.token)
+      .then((data) => {
+        if (!active) return
+        setOverview(data)
+        setAuthState('signedIn')
       })
       .catch(() => {
         if (!active) return
-        clearAdminSession()
-        setSessionToken('')
-        setWorkspace(null)
-        setAuthState('signedOut')
+        signOutLocally()
       })
+    return () => { active = false }
+  }, [signOutLocally])
 
-    return () => {
-      active = false
-    }
-  }, [])
-
-  const collectionStats = useMemo(() => {
-    if (!workspace) return []
-    return [
-      ['Tratamientos', workspace.treatments],
-      ['Ubicaciones', workspace.locations],
-      ['Resultados', workspace.resultCases],
-      ['Testimonios', workspace.testimonials],
-      ['Preguntas frecuentes', workspace.faqs],
-    ].map(([label, rows]) => {
-      const records = rows as Array<{ status?: string }>
-      return {
-        label: label as string,
-        total: records.length,
-        published: records.filter((record) => record.status === 'published').length,
-      }
+  useEffect(() => {
+    if (authState !== 'signedIn') return
+    const sectionKey = viewToSection[activeView]
+    if (!sectionKey) return
+    void loadSection(sectionKey).catch((error) => {
+      if (isCmsAuthError(error)) handleAsyncError(error)
     })
-  }, [workspace])
+  }, [activeView, authState, handleAsyncError, loadSection])
 
-  const handleLogin = async (event: FormEvent) => {
+  const navigate = useCallback((view: AdminView) => {
+    if (view === activeView) return
+    window.location.hash = `/${view}`
+    setMobileNavOpen(false)
+  }, [activeView])
+
+  const prefetchView = useCallback((view: AdminView) => {
+    if (authState !== 'signedIn') return
+    const key = viewToSection[view]
+    if (key && !cache[key]) void loadSection(key).catch(() => undefined)
+  }, [authState, cache, loadSection])
+
+  const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!password.trim()) return
     setLoginBusy(true)
-    setError('')
-
+    setLoginError('')
     try {
       const result = await cmsClient.login(password, getOrCreateClientId())
       const saved = saveAdminSession(result.token!, result.expiresIn!)
       setSessionToken(saved.token)
-      await syncWorkspace(saved.token)
+      const data = await cmsClient.overview(saved.token)
+      setOverview(data)
       setPassword('')
       setAuthState('signedIn')
-    } catch (loginError) {
-      setError(messageFromError(loginError))
+    } catch (error) {
+      setLoginError(messageFromError(error))
     } finally {
       setLoginBusy(false)
     }
   }
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     const token = sessionToken
-    clearAdminSession()
-    setSessionToken('')
-    setWorkspace(null)
-    setAuthState('signedOut')
-    setActiveView('overview')
-    setNotice('')
-    setError('')
-    if (token) cmsClient.logout(token).catch(() => undefined)
+    signOutLocally()
+    if (token) void cmsClient.logout(token).catch(() => undefined)
   }
 
-  const handleRefresh = async () => {
+  const refreshCurrent = async () => {
     if (!sessionToken) return
-    setPageBusy(true)
-    setError('')
-    setNotice('')
     try {
-      await syncWorkspace(sessionToken)
-      setNotice('Datos sincronizados con el CMS.')
-    } catch (refreshError) {
-      setError(messageFromError(refreshError))
-    } finally {
-      setPageBusy(false)
+      if (activeView === 'overview') {
+        await loadOverview(sessionToken, true)
+        pushToast('success', 'Resumen actualizado.')
+        return
+      }
+      const key = viewToSection[activeView]
+      if (!key) return
+      await loadSection(key, true)
+      pushToast('success', 'Contenido actualizado.')
+    } catch (error) {
+      handleAsyncError(error)
     }
   }
 
-  const handleSettingsChange = (field: keyof CmsSettings, value: string) => {
-    setSettingsDraft((current) => ({ ...current, [field]: value }))
-  }
-
-  const handleSaveSettings = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!sessionToken) return
-    setPageBusy(true)
-    setError('')
-    setNotice('')
+  const runMutation = useCallback(async <T,>(task: () => Promise<T>, successMessage: string): Promise<T> => {
+    setMutationBusy(true)
     try {
-      const saved = await cmsClient.saveSettings(sessionToken, settingsDraft)
-      setSettingsDraft({ ...emptySettings, ...saved })
-      await syncWorkspace(sessionToken)
-      setNotice('Datos generales guardados correctamente.')
-    } catch (saveError) {
-      setError(messageFromError(saveError))
+      const result = await task()
+      pushToast('success', successMessage)
+      refreshOverviewInBackground()
+      return result
+    } catch (error) {
+      handleAsyncError(error)
+      throw error
     } finally {
-      setPageBusy(false)
+      setMutationBusy(false)
     }
+  }, [handleAsyncError, pushToast, refreshOverviewInBackground])
+
+  const saveSettings = async (record: Partial<CmsSettings>) => {
+    const saved = await runMutation(() => cmsClient.saveSettings(sessionToken, record), 'Datos generales guardados.')
+    setSectionData('settings', [saved])
+    setOverview((current) => current ? { ...current, settings: saved } : current)
   }
 
-  const handleChangePassword = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!sessionToken) return
-    if (newPassword !== confirmPassword) {
-      setError('La confirmación no coincide con la nueva contraseña.')
-      return
-    }
-
-    setPageBusy(true)
-    setError('')
-    setNotice('')
-    try {
-      const result = await cmsClient.changePassword(sessionToken, currentPassword, newPassword)
-      const saved = saveAdminSession(result.token!, result.expiresIn!)
-      setSessionToken(saved.token)
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
-      setNotice('Contraseña actualizada. Las sesiones anteriores quedaron invalidadas.')
-    } catch (changeError) {
-      setError(messageFromError(changeError))
-    } finally {
-      setPageBusy(false)
-    }
+  const saveContent = async (record: Partial<CmsContentRecord>) => {
+    const saved = await runMutation(() => cmsClient.saveContent(sessionToken, record as Record<string, unknown>), 'Texto guardado.') as CmsContentRecord
+    const rows = (cache.content?.data as CmsContentRecord[] | undefined) || []
+    setSectionData('content', upsertById(rows as unknown as Record<string, unknown>[], saved as unknown as Record<string, unknown>, 'content_id') as unknown as CmsContentRecord[])
   }
+
+  const saveCollection = async (key: CmsCollectionKey, id: string | null, record: Record<string, unknown>) => {
+    const saved = await runMutation(
+      () => id ? cmsClient.updateRecord(sessionToken, key, id, record) : cmsClient.createRecord(sessionToken, key, record),
+      id ? 'Registro actualizado.' : 'Registro creado.',
+    ) as CmsCollectionRecord
+    const definition = collectionDefinitions[key]
+    const rows = (cache[key]?.data as CmsCollectionRecord[] | undefined) || []
+    setSectionData(key, upsertById(rows as unknown as Record<string, unknown>[], saved as unknown as Record<string, unknown>, definition.idField) as unknown as CmsCollectionRecord[])
+    return saved
+  }
+
+  const archiveCollection = async (key: CmsCollectionKey, record: CmsCollectionRecord) => {
+    const definition = collectionDefinitions[key]
+    const id = String((record as unknown as Record<string, unknown>)[definition.idField] || '')
+    const saved = await runMutation(() => cmsClient.archiveRecord(sessionToken, key, id), 'Registro archivado.') as CmsCollectionRecord
+    const rows = (cache[key]?.data as CmsCollectionRecord[] | undefined) || []
+    setSectionData(key, upsertById(rows as unknown as Record<string, unknown>[], saved as unknown as Record<string, unknown>, definition.idField) as unknown as CmsCollectionRecord[])
+  }
+
+  const restoreCollection = async (key: CmsCollectionKey, record: CmsCollectionRecord) => {
+    const definition = collectionDefinitions[key]
+    const id = String((record as unknown as Record<string, unknown>)[definition.idField] || '')
+    const saved = await runMutation(() => cmsClient.restoreRecord(sessionToken, key, id), 'Registro restaurado como borrador.') as CmsCollectionRecord
+    const rows = (cache[key]?.data as CmsCollectionRecord[] | undefined) || []
+    setSectionData(key, upsertById(rows as unknown as Record<string, unknown>[], saved as unknown as Record<string, unknown>, definition.idField) as unknown as CmsCollectionRecord[])
+  }
+
+  const ensureMedia = useCallback(async () => { await loadSection<CmsMediaSectionData>('media') }, [loadSection])
+
+  const uploadMedia = async (file: File, altText: string) => {
+    const base64 = await fileToDataUrl(file)
+    const saved = await runMutation(() => cmsClient.uploadMedia(sessionToken, { fileName: file.name, mimeType: file.type, base64, altText }), 'Imagen subida a la biblioteca.')
+    const mediaData = (cache.media?.data as CmsMediaSectionData | undefined) || { media: [], mediaLinks: [] }
+    setSectionData('media', { ...mediaData, media: [...mediaData.media, saved] })
+    return saved
+  }
+
+  const updateMedia = async (mediaId: string, altText: string) => {
+    const saved = await runMutation(() => cmsClient.updateMedia(sessionToken, mediaId, altText), 'Imagen actualizada.')
+    const mediaData = (cache.media?.data as CmsMediaSectionData | undefined) || { media: [], mediaLinks: [] }
+    setSectionData('media', { ...mediaData, media: mediaData.media.map((item) => item.media_id === mediaId ? saved : item) })
+  }
+
+  const archiveMedia = async (media: CmsMedia) => {
+    const saved = await runMutation(() => cmsClient.archiveMedia(sessionToken, media.media_id), 'Imagen archivada.')
+    const mediaData = (cache.media?.data as CmsMediaSectionData | undefined) || { media: [], mediaLinks: [] }
+    const next = saved || { ...media, status: 'archived' as const, archived_at: new Date().toISOString() }
+    setSectionData('media', { ...mediaData, media: mediaData.media.map((item) => item.media_id === media.media_id ? next : item) })
+  }
+
+  const restoreMedia = async (media: CmsMedia) => {
+    const saved = await runMutation(() => cmsClient.restoreMedia(sessionToken, media.media_id), 'Imagen restaurada.')
+    const mediaData = (cache.media?.data as CmsMediaSectionData | undefined) || { media: [], mediaLinks: [] }
+    const next = saved || { ...media, status: 'published' as const, archived_at: '' }
+    setSectionData('media', { ...mediaData, media: mediaData.media.map((item) => item.media_id === media.media_id ? next : item) })
+  }
+
+  const linkMedia = async (payload: Record<string, unknown>) => {
+    const saved = await runMutation(() => cmsClient.linkMedia(sessionToken, payload), 'Imagen vinculada.')
+    const mediaData = (cache.media?.data as CmsMediaSectionData | undefined) || { media: [], mediaLinks: [] }
+    const entityType = String(payload.entityType || '')
+    const entityId = String(payload.entityId || '')
+    const fieldKey = String(payload.fieldKey || '')
+    const links = mediaData.mediaLinks.map((link) => (
+      link.status !== 'archived' && link.entity_type === entityType && link.entity_id === entityId && link.field_key === fieldKey
+        ? { ...link, status: 'archived' as const, archived_at: new Date().toISOString() }
+        : link
+    ))
+    setSectionData('media', { ...mediaData, mediaLinks: [...links, saved] })
+    return saved
+  }
+
+  const unlinkMedia = async (mediaLinkId: string) => {
+    await runMutation(() => cmsClient.unlinkMedia(sessionToken, mediaLinkId), 'Imagen desvinculada.')
+    const mediaData = (cache.media?.data as CmsMediaSectionData | undefined) || { media: [], mediaLinks: [] }
+    setSectionData('media', {
+      ...mediaData,
+      mediaLinks: mediaData.mediaLinks.map((link) => link.media_link_id === mediaLinkId ? { ...link, status: 'archived' as const, archived_at: new Date().toISOString() } : link),
+    })
+  }
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    const result = await runMutation(() => cmsClient.changePassword(sessionToken, currentPassword, newPassword), 'Contraseña actualizada. Las sesiones anteriores quedaron invalidadas.')
+    const saved = saveAdminSession(result.token!, result.expiresIn!)
+    setSessionToken(saved.token)
+  }
+
+  const sectionKey = viewToSection[activeView]
+  const currentEntry = sectionKey ? cache[sectionKey] : undefined
+  const currentLoading = sectionKey ? !!loadingSections[sectionKey] : overviewLoading
+  const currentError = sectionKey ? sectionErrors[sectionKey] : ''
+
+  const currentTitle = useMemo(() => {
+    for (const group of navGroups) {
+      const item = group.items.find((candidate) => candidate.id === activeView)
+      if (item) return item.label
+    }
+    return 'Resumen'
+  }, [activeView])
 
   if (authState === 'checking') {
-    return (
-      <main className={styles.loadingScreen}>
-        <LoaderCircle className={styles.spinner} size={30} />
-        <span>Validando sesión</span>
-      </main>
-    )
+    return <main className={styles.loadingScreen}><Spinner size={30} /><span>Validando sesión</span></main>
   }
 
   if (authState === 'signedOut') {
@@ -242,331 +411,124 @@ function AdminApp() {
         <section className={styles.loginCard}>
           <div className={styles.loginBrand}>
             <img src={brankoMonogram} alt="" aria-hidden="true" />
-            <div>
-              <strong>Branko Iriart</strong>
-              <span>Panel de contenidos</span>
-            </div>
+            <div><strong>Branko Iriart</strong><span>Panel de contenidos</span></div>
           </div>
-
           <div className={styles.loginCopy}>
             <span className={styles.eyebrow}>Acceso privado</span>
-            <h1>Administrá la landing sin tocar el diseño.</h1>
-            <p>Textos, datos, colecciones e imágenes se gestionan desde este espacio.</p>
+            <h1>Administrá la landing con claridad.</h1>
+            <p>Textos, tratamientos, resultados, testimonios, ubicaciones e imágenes desde un solo lugar.</p>
           </div>
-
           <form className={styles.loginForm} onSubmit={handleLogin}>
             <label htmlFor="admin-password">Contraseña</label>
             <div className={styles.passwordField}>
-              <input
-                id="admin-password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                autoFocus
-              />
-              <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label="Mostrar u ocultar contraseña">
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              <input id="admin-password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" autoFocus />
+              <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label="Mostrar u ocultar contraseña">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
             </div>
-            {error && <p className={styles.formError}>{error}</p>}
-            <button className={styles.primaryButton} disabled={loginBusy} type="submit">
-              {loginBusy ? <LoaderCircle className={styles.spinner} size={17} /> : <ShieldCheck size={17} />}
-              {loginBusy ? 'Ingresando...' : 'Ingresar al panel'}
-            </button>
+            {loginError && <p className={styles.formError}>{loginError}</p>}
+            <button className={styles.primaryButton} disabled={loginBusy || !password.trim()} type="submit">{loginBusy ? <Spinner /> : <ShieldCheck size={17} />}{loginBusy ? 'Ingresando...' : 'Ingresar al panel'}</button>
           </form>
         </section>
       </main>
     )
   }
 
-  const settings = workspace?.settings[0]
-  const activeMedia = workspace?.media.filter((item) => item.status !== 'archived').length || 0
-  const publishedContent = workspace?.content.filter((item) => item.status === 'published').length || 0
+  const renderView = () => {
+    if (activeView === 'overview') {
+      if (!overview) return <SectionLoader label="Cargando resumen" />
+      return <OverviewView overview={overview} onNavigate={navigate} />
+    }
+    if (activeView === 'security') return <SecurityView busy={mutationBusy} onChangePassword={changePassword} />
+    if (!sectionKey || !currentEntry) {
+      if (currentError) return <div className={styles.loadError}><strong>No pudimos cargar esta sección.</strong><p>{currentError}</p><button className={styles.secondaryButton} type="button" onClick={() => sectionKey && void loadSection(sectionKey, true).catch(handleAsyncError)}>Reintentar</button></div>
+      return <SectionLoader />
+    }
+
+    if (activeView === 'general') return <GeneralView settings={(currentEntry.data as CmsSettings[])[0]} busy={mutationBusy} onSave={saveSettings} />
+    if (activeView === 'content') return <ContentView records={currentEntry.data as CmsContentRecord[]} busy={mutationBusy} onSave={saveContent} />
+    if (activeView === 'media') return <MediaView data={currentEntry.data as CmsMediaSectionData} busy={mutationBusy} onUpload={uploadMedia} onUpdate={updateMedia} onArchive={archiveMedia} onRestore={restoreMedia} />
+    if (activeView === 'activity') return <ActivityView records={currentEntry.data as CmsAuditRecord[]} />
+    if (activeView in collectionDefinitions) {
+      const key = activeView as CmsCollectionKey
+      return (
+        <CollectionView
+          definition={collectionDefinitions[key]}
+          records={currentEntry.data as CmsCollectionRecord[]}
+          busy={mutationBusy}
+          mediaData={cache.media?.data as CmsMediaSectionData | undefined}
+          mediaLoading={!!loadingSections.media}
+          onEnsureMedia={ensureMedia}
+          onSave={(id, record) => saveCollection(key, id, record)}
+          onArchive={(record) => archiveCollection(key, record)}
+          onRestore={(record) => restoreCollection(key, record)}
+          onUploadMedia={uploadMedia}
+          onLinkMedia={linkMedia}
+          onUnlinkMedia={unlinkMedia}
+        />
+      )
+    }
+    return null
+  }
 
   return (
     <div className={styles.adminShell}>
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${mobileNavOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarBrand}>
           <img src={brankoMonogram} alt="" aria-hidden="true" />
-          <div>
-            <strong>Branko Iriart</strong>
-            <span>Administración</span>
-          </div>
+          <div><strong>Branko Iriart</strong><span>Administración</span></div>
+          <button className={styles.mobileClose} type="button" onClick={() => setMobileNavOpen(false)} aria-label="Cerrar navegación"><X size={19} /></button>
         </div>
 
         <nav className={styles.nav} aria-label="Secciones del panel">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const selected = activeView === item.id
-            return (
-              <button
-                className={selected ? styles.navItemActive : styles.navItem}
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  setActiveView(item.id)
-                  setError('')
-                  setNotice('')
-                }}
-              >
-                <Icon size={18} />
-                <span>
-                  <strong>{item.label}</strong>
-                  <small>{item.description}</small>
-                </span>
-              </button>
-            )
-          })}
+          {navGroups.map((group) => (
+            <div className={styles.navGroup} key={group.label}>
+              <span className={styles.navGroupLabel}>{group.label}</span>
+              {group.items.map((item) => {
+                const Icon = iconByView[item.id]
+                const selected = activeView === item.id
+                return (
+                  <button
+                    className={selected ? styles.navItemActive : styles.navItem}
+                    key={item.id}
+                    type="button"
+                    onClick={() => navigate(item.id)}
+                    onMouseEnter={() => prefetchView(item.id)}
+                    onFocus={() => prefetchView(item.id)}
+                  >
+                    <Icon size={17} />
+                    <span><strong>{item.label}</strong><small>{item.description}</small></span>
+                    {selected && <i />}
+                  </button>
+                )
+              })}
+            </div>
+          ))}
         </nav>
 
-        <button className={styles.logoutButton} type="button" onClick={handleLogout}>
-          <LogOut size={17} />
-          Cerrar sesión
-        </button>
+        <button className={styles.logoutButton} type="button" onClick={handleLogout}><LogOut size={17} /> Cerrar sesión</button>
       </aside>
+      {mobileNavOpen && <button className={styles.mobileBackdrop} aria-label="Cerrar navegación" type="button" onClick={() => setMobileNavOpen(false)} />}
 
       <main className={styles.main}>
         <header className={styles.topbar}>
-          <div>
-            <span className={styles.eyebrow}>CMS · v0.1</span>
-            <h1>{navItems.find((item) => item.id === activeView)?.label}</h1>
+          <div className={styles.topbarTitle}>
+            <button className={styles.mobileMenu} type="button" onClick={() => setMobileNavOpen(true)} aria-label="Abrir navegación"><Menu size={20} /></button>
+            <div><span className={styles.eyebrow}>CMS · Branko Iriart</span><h1>{currentTitle}</h1></div>
           </div>
-          <button className={styles.secondaryButton} type="button" onClick={handleRefresh} disabled={pageBusy}>
-            <RefreshCw className={pageBusy ? styles.spinner : undefined} size={16} />
-            Sincronizar
-          </button>
+          <div className={styles.topbarActions}>
+            {currentLoading && currentEntry && <span className={styles.backgroundSync}><Spinner size={14} /> Actualizando</span>}
+            <button className={styles.secondaryButton} type="button" onClick={() => void refreshCurrent()} disabled={currentLoading || mutationBusy || activeView === 'security'}>
+              <RefreshCw className={currentLoading ? styles.spinner : undefined} size={16} /> Sincronizar
+            </button>
+          </div>
         </header>
 
-        {(error || notice) && (
-          <div className={error ? styles.alertError : styles.alertSuccess}>
-            {notice && <CircleCheck size={17} />}
-            <span>{error || notice}</span>
-          </div>
-        )}
-
-        {activeView === 'overview' && (
-          <section className={styles.pageSection}>
-            <div className={styles.heroPanel}>
-              <div>
-                <span className={styles.eyebrow}>Conexión activa</span>
-                <h2>{settings?.professional_name || 'Dr. Branko Iriart'}</h2>
-                <p>El panel está conectado al Web App y a la Sheet del CMS. Los cambios se guardan sin alterar la estructura visual de la landing.</p>
-              </div>
-              <div className={styles.statusPill}><span /> Backend conectado</div>
-            </div>
-
-            <div className={styles.metricsGrid}>
-              <article className={styles.metricCard}>
-                <span>Contenido publicado</span>
-                <strong>{publishedContent}</strong>
-                <small>textos administrables</small>
-              </article>
-              <article className={styles.metricCard}>
-                <span>Tratamientos</span>
-                <strong>{workspace?.treatments.length || 0}</strong>
-                <small>registros totales</small>
-              </article>
-              <article className={styles.metricCard}>
-                <span>Biblioteca</span>
-                <strong>{activeMedia}</strong>
-                <small>imágenes activas</small>
-              </article>
-              <article className={styles.metricCard}>
-                <span>Preguntas frecuentes</span>
-                <strong>{workspace?.faqs.length || 0}</strong>
-                <small>registros totales</small>
-              </article>
-            </div>
-
-            <div className={styles.collectionPanel}>
-              <div className={styles.sectionHeading}>
-                <div>
-                  <span className={styles.eyebrow}>Colecciones</span>
-                  <h2>Estado del contenido estructurado</h2>
-                </div>
-              </div>
-              <div className={styles.collectionRows}>
-                {collectionStats.map((stat) => (
-                  <div className={styles.collectionRow} key={stat.label}>
-                    <span>{stat.label}</span>
-                    <div>
-                      <strong>{stat.published}</strong>
-                      <small> publicados de {stat.total}</small>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {activeView === 'general' && (
-          <section className={styles.pageSection}>
-            <div className={styles.sectionHeading}>
-              <div>
-                <span className={styles.eyebrow}>Configuración</span>
-                <h2>Datos generales</h2>
-                <p>Información transversal que alimentará contacto, redes y métricas visibles.</p>
-              </div>
-            </div>
-
-            <form className={styles.formCard} onSubmit={handleSaveSettings}>
-              <div className={styles.formGrid}>
-                <Field label="Nombre del sitio" value={settingsDraft.site_name || ''} onChange={(value) => handleSettingsChange('site_name', value)} />
-                <Field label="Nombre profesional" value={settingsDraft.professional_name || ''} onChange={(value) => handleSettingsChange('professional_name', value)} />
-                <Field label="Matrícula / credencial" value={settingsDraft.professional_license || ''} onChange={(value) => handleSettingsChange('professional_license', value)} />
-                <Field label="WhatsApp" value={settingsDraft.whatsapp_number || ''} onChange={(value) => handleSettingsChange('whatsapp_number', value)} />
-                <Field label="Instagram" value={settingsDraft.instagram_handle || ''} onChange={(value) => handleSettingsChange('instagram_handle', value)} />
-                <Field label="URL de Instagram" value={settingsDraft.instagram_url || ''} onChange={(value) => handleSettingsChange('instagram_url', value)} />
-                <Field label="Métrica pacientes" value={settingsDraft.patients_metric || ''} onChange={(value) => handleSettingsChange('patients_metric', value)} />
-                <Field label="Métrica seguidores" value={settingsDraft.followers_metric || ''} onChange={(value) => handleSettingsChange('followers_metric', value)} />
-                <Field label="Métrica tratamientos" value={settingsDraft.treatments_metric || ''} onChange={(value) => handleSettingsChange('treatments_metric', value)} />
-                <Field label="Métrica personalizada" value={settingsDraft.personalized_metric || ''} onChange={(value) => handleSettingsChange('personalized_metric', value)} />
-              </div>
-
-              <div className={styles.formWideFields}>
-                <Field label="Mensaje para reservar" multiline value={settingsDraft.whatsapp_booking_message || ''} onChange={(value) => handleSettingsChange('whatsapp_booking_message', value)} />
-                <Field label="Mensaje para consultar" multiline value={settingsDraft.whatsapp_consult_message || ''} onChange={(value) => handleSettingsChange('whatsapp_consult_message', value)} />
-              </div>
-
-              <div className={styles.formActions}>
-                <button className={styles.primaryButton} disabled={pageBusy} type="submit">
-                  {pageBusy ? <LoaderCircle className={styles.spinner} size={17} /> : <Save size={17} />}
-                  Guardar cambios
-                </button>
-              </div>
-            </form>
-          </section>
-        )}
-
-        {activeView === 'content' && (
-          <section className={styles.pageSection}>
-            <div className={styles.sectionHeading}>
-              <div>
-                <span className={styles.eyebrow}>Contenido</span>
-                <h2>Colecciones listas para administrar</h2>
-                <p>La base ya está conectada. El siguiente bloque agrega los formularios CRUD sobre estas mismas colecciones.</p>
-              </div>
-            </div>
-            <div className={styles.contentCards}>
-              {collectionStats.map((stat) => (
-                <article className={styles.contentCard} key={stat.label}>
-                  <strong>{stat.label}</strong>
-                  <span>{stat.total} registros</span>
-                  <small>{stat.published} publicados</small>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {activeView === 'media' && (
-          <section className={styles.pageSection}>
-            <div className={styles.sectionHeading}>
-              <div>
-                <span className={styles.eyebrow}>Google Drive</span>
-                <h2>Biblioteca de imágenes</h2>
-                <p>El backend ya soporta upload, reutilización y vínculos. El MediaPicker visual se suma en el próximo bloque.</p>
-              </div>
-            </div>
-            <div className={styles.metricsGrid}>
-              <article className={styles.metricCard}>
-                <span>Activas</span>
-                <strong>{activeMedia}</strong>
-                <small>visibles para vincular</small>
-              </article>
-              <article className={styles.metricCard}>
-                <span>Registros totales</span>
-                <strong>{workspace?.media.length || 0}</strong>
-                <small>incluye archivados</small>
-              </article>
-              <article className={styles.metricCard}>
-                <span>Vínculos</span>
-                <strong>{workspace?.mediaLinks.length || 0}</strong>
-                <small>relaciones registradas</small>
-              </article>
-            </div>
-          </section>
-        )}
-
-        {activeView === 'security' && (
-          <section className={styles.pageSection}>
-            <div className={styles.sectionHeading}>
-              <div>
-                <span className={styles.eyebrow}>Seguridad</span>
-                <h2>Cambiar contraseña</h2>
-                <p>Al cambiarla, todas las sesiones anteriores quedan invalidadas y esta sesión recibe un token nuevo.</p>
-              </div>
-            </div>
-
-            <form className={styles.securityCard} onSubmit={handleChangePassword}>
-              <SecurityField label="Contraseña actual" value={currentPassword} onChange={setCurrentPassword} visible={showSecurityPasswords} autoComplete="current-password" />
-              <SecurityField label="Nueva contraseña" value={newPassword} onChange={setNewPassword} visible={showSecurityPasswords} autoComplete="new-password" />
-              <SecurityField label="Repetir nueva contraseña" value={confirmPassword} onChange={setConfirmPassword} visible={showSecurityPasswords} autoComplete="new-password" />
-              <label className={styles.visibilityToggle}>
-                <input type="checkbox" checked={showSecurityPasswords} onChange={(event) => setShowSecurityPasswords(event.target.checked)} />
-                Mostrar contraseñas
-              </label>
-              <div className={styles.securityHint}>Mínimo 12 caracteres, combinando letras y números.</div>
-              <button className={styles.primaryButton} type="submit" disabled={pageBusy || !currentPassword || !newPassword || !confirmPassword}>
-                {pageBusy ? <LoaderCircle className={styles.spinner} size={17} /> : <ShieldCheck size={17} />}
-                Actualizar contraseña
-              </button>
-            </form>
-          </section>
-        )}
+        <Suspense fallback={<SectionLoader />}>
+          {renderView()}
+        </Suspense>
       </main>
+
+      <ToastRegion toasts={toasts} onDismiss={(id) => setToasts((current) => current.filter((toast) => toast.id !== id))} />
     </div>
-  )
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  multiline = false,
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  multiline?: boolean
-}) {
-  return (
-    <label className={styles.field}>
-      <span>{label}</span>
-      {multiline ? (
-        <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={3} />
-      ) : (
-        <input value={value} onChange={(event) => onChange(event.target.value)} />
-      )}
-    </label>
-  )
-}
-
-function SecurityField({
-  label,
-  value,
-  onChange,
-  visible,
-  autoComplete,
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  visible: boolean
-  autoComplete: string
-}) {
-  return (
-    <label className={styles.field}>
-      <span>{label}</span>
-      <input
-        type={visible ? 'text' : 'password'}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        autoComplete={autoComplete}
-      />
-    </label>
   )
 }
 

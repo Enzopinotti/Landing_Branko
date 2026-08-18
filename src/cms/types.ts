@@ -93,6 +93,51 @@ export interface CmsMediaLink extends CmsBaseRecord {
   sort_order: number | string
 }
 
+export interface CmsAuditRecord {
+  audit_id: string
+  created_at: string
+  actor: string
+  channel: string
+  entity: string
+  entity_id: string
+  action: string
+}
+
+export interface CmsStatusSummary {
+  total: number
+  published: number
+  draft: number
+  archived: number
+}
+
+export type CmsCollectionKey =
+  | 'treatments'
+  | 'locations'
+  | 'resultCases'
+  | 'testimonials'
+  | 'faqs'
+
+export type CmsSectionKey =
+  | 'settings'
+  | 'content'
+  | CmsCollectionKey
+  | 'media'
+  | 'activity'
+
+export type CmsCountKey = 'content' | CmsCollectionKey | 'media'
+
+export interface CmsOverviewData {
+  settings: Partial<CmsSettings>
+  counts: Record<CmsCountKey, CmsStatusSummary>
+  recentActivity: CmsAuditRecord[]
+  session: { actor: string }
+}
+
+export interface CmsMediaSectionData {
+  media: CmsMedia[]
+  mediaLinks: CmsMediaLink[]
+}
+
 export interface CmsWorkspaceData {
   settings: CmsSettings[]
   content: CmsContentRecord[]
@@ -103,9 +148,8 @@ export interface CmsWorkspaceData {
   faqs: CmsFaq[]
   media: CmsMedia[]
   mediaLinks: CmsMediaLink[]
-  session: {
-    actor: string
-  }
+  activity?: CmsAuditRecord[]
+  session: { actor: string }
 }
 
 export interface CmsPublicBootstrapData {
@@ -141,6 +185,21 @@ export interface CmsLoginResponse {
   code?: string
 }
 
+export interface CmsOverviewResponse {
+  success: boolean
+  data?: CmsOverviewData
+  error?: string
+  code?: string
+}
+
+export interface CmsSectionResponse<T> {
+  success: boolean
+  key?: CmsSectionKey
+  data?: T
+  error?: string
+  code?: string
+}
+
 export interface CmsWorkspaceResponse {
   success: boolean
   data?: CmsWorkspaceData
@@ -172,9 +231,16 @@ export interface CmsAdminSession {
   expiresAt: number
 }
 
-export type CmsCollectionKey =
-  | 'treatments'
-  | 'locations'
-  | 'resultCases'
-  | 'testimonials'
-  | 'faqs'
+export type CmsCollectionRecord =
+  | CmsTreatment
+  | CmsLocation
+  | CmsResultCase
+  | CmsTestimonial
+  | CmsFaq
+
+export type CmsSectionData =
+  | CmsSettings[]
+  | CmsContentRecord[]
+  | CmsCollectionRecord[]
+  | CmsMediaSectionData
+  | CmsAuditRecord[]
