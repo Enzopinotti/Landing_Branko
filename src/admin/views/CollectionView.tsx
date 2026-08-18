@@ -10,6 +10,7 @@ import styles from '../AdminApp.module.scss'
 function rowValue(record: CmsCollectionRecord, key: string) { return String((record as unknown as Record<string, unknown>)[key] ?? '') }
 function rowId(record: CmsCollectionRecord, definition: CollectionDefinition) { return rowValue(record, definition.idField) }
 function formatBytes(value: number | string) { const bytes = Number(value) || 0; if (bytes < 1024) return `${bytes} B`; if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`; return `${(bytes / 1024 / 1024).toFixed(1)} MB` }
+function validImage(file: File) { return ['image/jpeg','image/png','image/webp'].includes(file.type) && file.size <= 6 * 1024 * 1024 }
 
 export default function CollectionView({ definition, records, busy, mediaData, mediaLoading, onEnsureMedia, onSave, onArchive, onRestore, onUploadMedia, onLinkMedia, onUnlinkMedia }: {
   definition: CollectionDefinition
@@ -33,6 +34,7 @@ export default function CollectionView({ definition, records, busy, mediaData, m
   const [confirming, setConfirming] = useState<CmsCollectionRecord | null>(null)
   const [pickerSlot, setPickerSlot] = useState<string | null>(null)
   const [pickerSearch, setPickerSearch] = useState('')
+  const [pickerDragActive, setPickerDragActive] = useState(false)
   const [uploadBusy, setUploadBusy] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -42,7 +44,7 @@ export default function CollectionView({ definition, records, busy, mediaData, m
   }, [records, search, status])
   const currentId = editing ? rowId(editing, definition) : ''
   const activeMedia = useMemo(() => (mediaData?.media || []).filter((item) => item.status !== 'archived'), [mediaData])
-  const pickerMedia = useMemo(() => { const needle = pickerSearch.trim().toLowerCase(); return activeMedia.filter((item) => !needle || `${item.file_name} ${item.alt_text}`.toLowerCase().includes(needle)) }, [activeMedia, pickerSearch])
+  const pickerMedia = useMemo(() => { const needle = pickerSearch.trim().toLowerCase(); return activeMedia.filter((item) => !needle || `${item.file_name} ${item.alt_text} ${item.caption || ''} ${item.kind || ''} ${item.tags || ''}`.toLowerCase().includes(needle)) }, [activeMedia, pickerSearch])
 
   useEffect(() => {
     if (editorOpen && editing && definition.mediaSlots?.length) void onEnsureMedia().catch(() => undefined)
@@ -50,7 +52,7 @@ export default function CollectionView({ definition, records, busy, mediaData, m
 
   const openCreate = () => { setEditing(null); setDraft({ status: 'draft', sort_order: String(records.length + 1) }); setEditorOpen(true) }
   const openEdit = (record: CmsCollectionRecord) => { const next: Record<string, string> = {}; definition.fields.forEach((field) => { next[field.key] = rowValue(record, field.key) }); setEditing(record); setDraft(next); setEditorOpen(true) }
-  const closeEditor = () => { if (busy || uploadBusy) return; setEditorOpen(false); setEditing(null); setDraft({}); setPickerSlot(null); setPickerSearch('') }
+  const closeEditor = () => { if (busy || uploadBusy) return; setEditorOpen(false); setEditing(null); setDraft({}); setPickerSlot(null); setPickerSearch(''); setPickerDragActive(false) }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -70,24 +72,23 @@ export default function CollectionView({ definition, records, busy, mediaData, m
     if (!pickerSlot || !currentId) return
     try {
       await onLinkMedia({ mediaId: media.media_id, entityType: definition.key, entityId: currentId, fieldKey: pickerSlot, replaceField: true, sortOrder: 0 })
-      setPickerSlot(null); setPickerSearch('')
+      setPickerSlot(null); setPickerSearch(''); setPickerDragActive(false)
     } catch { /* feedback global */ }
   }
 
   const uploadFromPicker = async (file?: File) => {
-    if (!file || !pickerSlot || !currentId) return
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 6 * 1024 * 1024) return
+    if (!file || !pickerSlot || !currentId || !validImage(file)) return
     setUploadBusy(true)
     try {
       const media = await onUploadMedia(file, `${definition.singular} · ${editing ? rowValue(editing, definition.primaryField) : ''}`)
       await chooseMedia(media)
     } catch { /* feedback global */ }
-    finally { setUploadBusy(false); if (fileInputRef.current) fileInputRef.current.value = '' }
+    finally { setUploadBusy(false); setPickerDragActive(false); if (fileInputRef.current) fileInputRef.current.value = '' }
   }
 
   const safeRestore = (record: CmsCollectionRecord) => { void onRestore(record).catch(() => undefined) }
   const safeUnlink = (id: string) => { void onUnlinkMedia(id).catch(() => undefined) }
-  const openPicker = (slot: string) => { setPickerSlot(slot); void onEnsureMedia().catch(() => undefined) }
+  const openPicker = (slot: string) => { setPickerSlot(slot); setPickerDragActive(false); void onEnsureMedia().catch(() => undefined) }
 
   return (
     <section className={styles.pageSection}>
@@ -98,12 +99,13 @@ export default function CollectionView({ definition, records, busy, mediaData, m
 
       <Modal open={editorOpen && !pickerSlot} title={editing ? `Editar ${definition.singular}` : `Nuevo ${definition.singular}`} eyebrow={definition.title} description={editing ? 'Los cambios se reflejan en la landing cuando el registro está publicado.' : 'Completá los datos principales. Podés publicarlo ahora o dejarlo como borrador.'} size="xl" busy={busy || uploadBusy} onClose={closeEditor} footer={<><button className={styles.secondaryButton} type="button" onClick={closeEditor} disabled={busy || uploadBusy}>Cerrar</button><button className={styles.primaryButton} type="submit" form="collection-editor" disabled={busy || uploadBusy}>{busy ? <Spinner /> : <Save size={16} />} {busy ? 'Guardando...' : editing ? 'Guardar cambios' : 'Crear registro'}</button></>}>
         <form id="collection-editor" className={styles.formGrid} onSubmit={submit}>{definition.fields.map((field) => <FormField key={field.key} field={field} value={draft[field.key]} disabled={busy} onChange={(value) => setDraft((current) => ({ ...current, [field.key]: value }))} />)}</form>
-        {!!definition.mediaSlots?.length && <div className={styles.modalSubsection}><div className={styles.formSectionTitle}><h3>Imágenes vinculadas</h3><p>{editing ? 'Elegí imágenes existentes o subí nuevas sin duplicar archivos.' : 'Guardá primero el registro para poder asociar imágenes.'}</p></div>{editing && <div className={styles.mediaSlots}>{definition.mediaSlots.map((slot) => { const link = linksForCurrent(slot.key)[0]; const media = mediaForLink(link); return <div className={styles.mediaSlot} key={slot.key}><div className={styles.mediaSlotPreview}>{media ? <img src={media.public_url} alt={media.alt_text || ''} /> : <ImagePlus size={26} />}</div><div className={styles.mediaSlotCopy}><strong>{slot.label}</strong><p>{media?.file_name || slot.help}</p></div><div className={styles.mediaSlotActions}><button className={styles.secondaryButton} type="button" onClick={() => openPicker(slot.key)} disabled={mediaLoading || busy}>{mediaLoading ? <Spinner /> : <ImagePlus size={15} />} {media ? 'Cambiar' : 'Elegir'}</button>{link && <button className={styles.iconButtonDanger} type="button" disabled={busy} onClick={() => safeUnlink(link.media_link_id)} aria-label={`Quitar ${slot.label}`}><Link2Off size={16} /></button>}</div></div> })}</div>}</div>}
+        {!!definition.mediaSlots?.length && <div className={styles.modalSubsection}><div className={styles.formSectionTitle}><h3>Imágenes vinculadas</h3><p>{editing ? 'Elegí imágenes existentes o arrastrá una nueva. El mismo archivo puede reutilizarse.' : 'Guardá primero el registro para poder asociar imágenes.'}</p></div>{editing && <div className={styles.mediaSlots}>{definition.mediaSlots.map((slot) => { const link = linksForCurrent(slot.key)[0]; const media = mediaForLink(link); return <div className={styles.mediaSlot} key={slot.key}><div className={styles.mediaSlotPreview}>{media ? <img src={media.public_url} alt={media.alt_text || ''} /> : <ImagePlus size={26} />}</div><div className={styles.mediaSlotCopy}><strong>{slot.label}</strong><p>{media?.file_name || slot.help}</p></div><div className={styles.mediaSlotActions}><button className={styles.secondaryButton} type="button" onClick={() => openPicker(slot.key)} disabled={mediaLoading || busy}>{mediaLoading ? <Spinner /> : <ImagePlus size={15} />} {media ? 'Cambiar' : 'Elegir'}</button>{link && <button className={styles.iconButtonDanger} type="button" disabled={busy} onClick={() => safeUnlink(link.media_link_id)} aria-label={`Quitar ${slot.label}`}><Link2Off size={16} /></button>}</div></div> })}</div>}</div>}
       </Modal>
 
-      <Modal open={!!pickerSlot} title="Elegir imagen" eyebrow="Biblioteca" description="Seleccioná una imagen existente o subí una nueva. El archivo puede reutilizarse en distintos lugares." size="xl" busy={busy || uploadBusy} onClose={() => !busy && !uploadBusy && setPickerSlot(null)} footer={<button className={styles.secondaryButton} type="button" onClick={() => setPickerSlot(null)} disabled={busy || uploadBusy}>Volver al registro</button>}>
+      <Modal open={!!pickerSlot} title="Elegir imagen" eyebrow="Biblioteca" description="Seleccioná una imagen existente o arrastrá una nueva. El archivo puede reutilizarse en distintos lugares." size="xl" busy={busy || uploadBusy} onClose={() => !busy && !uploadBusy && setPickerSlot(null)} footer={<button className={styles.secondaryButton} type="button" onClick={() => setPickerSlot(null)} disabled={busy || uploadBusy}>Volver al registro</button>}>
         <div className={styles.pickerToolbar}><label className={styles.searchBox}><Search size={16} /><input value={pickerSearch} onChange={(event) => setPickerSearch(event.target.value)} placeholder="Buscar imagen..." /></label><input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(event) => void uploadFromPicker(event.target.files?.[0])} /><button className={styles.primaryButton} type="button" disabled={uploadBusy} onClick={() => fileInputRef.current?.click()}>{uploadBusy ? <Spinner /> : <Upload size={16} />} {uploadBusy ? 'Subiendo...' : 'Subir imagen'}</button></div>
-        {pickerMedia.length ? <div className={styles.mediaPickerGrid}>{pickerMedia.map((media) => <button className={styles.mediaPickerCard} type="button" key={media.media_id} onClick={() => void chooseMedia(media)} disabled={busy || uploadBusy}><img src={media.public_url} alt={media.alt_text || ''} loading="lazy" /><span><strong>{media.file_name}</strong><small>{formatBytes(media.file_size)}</small></span></button>)}</div> : <EmptyState title="Biblioteca vacía" description="Subí la primera imagen para poder asociarla." />}
+        <button className={`${styles.dropzone} ${pickerDragActive ? styles.dropzoneSelected : ''}`} type="button" disabled={uploadBusy} onClick={() => fileInputRef.current?.click()} onDragEnter={(event) => { event.preventDefault(); setPickerDragActive(true) }} onDragOver={(event) => { event.preventDefault(); setPickerDragActive(true) }} onDragLeave={(event) => { event.preventDefault(); setPickerDragActive(false) }} onDrop={(event) => { event.preventDefault(); setPickerDragActive(false); void uploadFromPicker(event.dataTransfer.files?.[0]) }}><ImagePlus size={24} /><strong>{pickerDragActive ? 'Soltá la imagen acá' : 'También podés arrastrar una imagen'}</strong><span>JPG, PNG o WebP · máximo 6 MB</span></button>
+        {pickerMedia.length ? <div className={styles.mediaPickerGrid}>{pickerMedia.map((media) => <button className={styles.mediaPickerCard} type="button" key={media.media_id} onClick={() => void chooseMedia(media)} disabled={busy || uploadBusy}><img src={media.public_url} alt={media.alt_text || ''} loading="lazy" /><span><strong>{media.file_name}</strong><small>{media.kind && media.kind !== 'general' ? `${media.kind} · ` : ''}{formatBytes(media.file_size)}</small></span></button>)}</div> : <EmptyState title="Biblioteca vacía" description="Subí la primera imagen para poder asociarla." />}
       </Modal>
 
       <Modal open={!!confirming} title={`Archivar ${definition.singular}`} eyebrow="Confirmación" description="El registro dejará de publicarse pero seguirá disponible para restaurarlo." size="sm" busy={busy} onClose={() => !busy && setConfirming(null)} footer={<><button className={styles.secondaryButton} type="button" onClick={() => setConfirming(null)} disabled={busy}>Cancelar</button><button className={styles.dangerButton} type="button" disabled={busy} onClick={() => { if (!confirming) return; void onArchive(confirming).then(() => setConfirming(null)).catch(() => undefined) }}>{busy ? <Spinner /> : <Archive size={16} />} Archivar</button></>}><p className={styles.confirmText}>¿Querés archivar <strong>{confirming ? rowValue(confirming,definition.primaryField) : ''}</strong>?</p></Modal>
