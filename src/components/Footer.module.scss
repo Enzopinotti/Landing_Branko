@@ -41,11 +41,12 @@
 }
 
 .logoSub {
-  font-size: 0.62rem;
-  font-weight: 400;
-  letter-spacing: 1.5px;
-  color: $cream-muted;
   margin-top: 4px;
+  font-size: 0.56rem;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: $gold;
 }
 
 .tagline {
