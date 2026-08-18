@@ -5,7 +5,7 @@ import styles from "./Navbar.module.scss";
 import brankoMonogram from "../assets/branko-monogram.svg";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { usePublicContent } from '@/cms/publicContent'
+import { usePublicContent } from '../cms/publicContent'
 
 const NAV_LINKS = [
   { label: "Servicios", href: "#tratamientos" },
