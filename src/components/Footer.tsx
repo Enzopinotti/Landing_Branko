@@ -1,6 +1,6 @@
 import styles from './Footer.module.scss'
 import brankoMonogram from '../assets/branko-monogram.svg'
-import { usePublicContent } from '@/cms/publicContent'
+import { usePublicContent } from '../cms/publicContent'
 
 export default function Footer() {
   const { data, text, whatsappUrl } = usePublicContent()
