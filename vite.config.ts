@@ -1,25 +1,49 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
-import { fileURLToPath, URL } from 'node:url'
+import { fileURLToPath, pathToFileURL, URL } from 'node:url'
 
 const resolveFile = (relativePath: string) => fileURLToPath(new URL(relativePath, import.meta.url))
 
+const sourceImports = new Map([
+  ['@/cms/publicContent', resolveFile('./src/cms/publicContent.tsx')],
+  ['@/cms/client', resolveFile('./src/cms/client.ts')],
+  ['@/cms/session', resolveFile('./src/cms/session.ts')],
+  ['@/cms/types', resolveFile('./src/cms/types.ts')],
+  ['@/assets/branko-monogram.svg', resolveFile('./src/assets/branko-monogram.svg')],
+])
+
+function rewriteSourceImports(): Plugin {
+  return {
+    name: 'branko-rewrite-source-imports',
+    enforce: 'pre',
+    transform(code, id) {
+      if (!/\.[cm]?[jt]sx?$/.test(id)) return null
+      let next = code
+      sourceImports.forEach((replacement, source) => {
+        next = next.replaceAll(`'${source}'`, `'${replacement}'`)
+        next = next.replaceAll(`"${source}"`, `"${replacement}"`)
+      })
+      return next === code ? null : { code: next, map: null }
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: [
-      { find: '@/cms/publicContent', replacement: resolveFile('./src/cms/publicContent.tsx') },
-      { find: '@/cms/client', replacement: resolveFile('./src/cms/client.ts') },
-      { find: '@/cms/session', replacement: resolveFile('./src/cms/session.ts') },
-      { find: '@/cms/types', replacement: resolveFile('./src/cms/types.ts') },
-      { find: '@/assets/branko-monogram.svg', replacement: resolveFile('./src/assets/branko-monogram.svg') },
-      { find: '@/styles/variables.scss', replacement: resolveFile('./src/styles/variables.scss') },
-    ],
-  },
+  plugins: [rewriteSourceImports(), react()],
   css: {
     preprocessorOptions: {
       scss: {
         api: 'modern-compiler',
+        importers: [
+          {
+            findFileUrl(url: string) {
+              if (url === '@/styles/variables.scss') {
+                return pathToFileURL(resolveFile('./src/styles/variables.scss'))
+              }
+              return null
+            },
+          },
+        ],
       },
     },
   },
