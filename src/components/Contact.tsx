@@ -7,7 +7,7 @@ import styles from './Contact.module.scss';
 import React from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { usePublicContent } from '@/cms/publicContent'
+import { usePublicContent } from '../cms/publicContent'
 
 const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: (i: number) => ({ opacity: 1, y: 0, transition: { duration: 0.8, delay: 0.1 + i * 0.1, ease: [0.25, 0.4, 0.25, 1] } }) };
 
