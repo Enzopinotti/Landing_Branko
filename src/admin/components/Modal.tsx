@@ -15,19 +15,13 @@ interface ModalProps {
   onClose: () => void
 }
 
-export function Modal({
-  open,
-  title,
-  eyebrow,
-  description,
-  children,
-  footer,
-  size = 'md',
-  busy = false,
-  onClose,
-}: ModalProps) {
+export function Modal({ open, title, eyebrow, description, children, footer, size = 'md', busy = false, onClose }: ModalProps) {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  const busyRef = useRef(busy)
+  closeRef.current = onClose
+  busyRef.current = busy
 
   useEffect(() => {
     if (!open) return
@@ -35,70 +29,34 @@ export function Modal({
     document.body.style.overflow = 'hidden'
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !busy) onClose()
+      if (event.key === 'Escape' && !busyRef.current) closeRef.current()
       if (event.key !== 'Tab' || !dialogRef.current) return
-      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
-      )
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')
       if (!focusable.length) return
       const first = focusable[0]
       const last = focusable[focusable.length - 1]
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault()
-        last.focus()
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault()
-        first.focus()
-      }
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
     }
 
     window.addEventListener('keydown', onKeyDown)
-    window.setTimeout(() => {
-      dialogRef.current?.querySelector<HTMLElement>('[data-autofocus], input, textarea, select, button')?.focus()
-    }, 0)
-
+    const focusTimer = window.setTimeout(() => dialogRef.current?.querySelector<HTMLElement>('[data-autofocus], input, textarea, select, button')?.focus(), 0)
     return () => {
+      window.clearTimeout(focusTimer)
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [busy, onClose, open])
+  }, [open])
 
   if (!open) return null
 
   return createPortal(
-    <div
-      className={styles.modalBackdrop}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !busy) onClose()
-      }}
-    >
-      <div
-        ref={dialogRef}
-        className={`${styles.modal} ${styles[`modal_${size}`]}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-      >
-        <header className={styles.modalHeader}>
-          <div>
-            {eyebrow && <span className={styles.eyebrow}>{eyebrow}</span>}
-            <h2 id={titleId}>{title}</h2>
-            {description && <p>{description}</p>}
-          </div>
-          <button
-            className={styles.iconButton}
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            aria-label="Cerrar modal"
-          >
-            <X size={19} />
-          </button>
-        </header>
+    <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) onClose() }}>
+      <div ref={dialogRef} className={`${styles.modal} ${styles[`modal_${size}`]}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+        <header className={styles.modalHeader}><div>{eyebrow && <span className={styles.eyebrow}>{eyebrow}</span>}<h2 id={titleId}>{title}</h2>{description && <p>{description}</p>}</div><button className={styles.iconButton} type="button" onClick={onClose} disabled={busy} aria-label="Cerrar modal"><X size={19} /></button></header>
         <div className={styles.modalBody}>{children}</div>
         {footer && <footer className={styles.modalFooter}>{footer}</footer>}
       </div>
-    </div>,
-    document.body,
+    </div>, document.body,
   )
 }

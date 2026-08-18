@@ -11,7 +11,7 @@ function activeLinksFor(mediaId: string, links: CmsMediaLink[]) { return links.f
 export default function MediaView({ data, busy, onUpload, onUpdate, onArchive, onRestore }: {
   data: CmsMediaSectionData
   busy: boolean
-  onUpload: (file: File, altText: string) => Promise<void>
+  onUpload: (file: File, altText: string) => Promise<unknown>
   onUpdate: (mediaId: string, altText: string) => Promise<void>
   onArchive: (media: CmsMedia) => Promise<void>
   onRestore: (media: CmsMedia) => Promise<void>
@@ -30,8 +30,8 @@ export default function MediaView({ data, busy, onUpload, onUpdate, onArchive, o
 
   const filtered = useMemo(() => { const needle = search.trim().toLowerCase(); return [...data.media].filter((media) => status === 'all' || media.status === status).filter((media) => !needle || `${media.file_name} ${media.alt_text}`.toLowerCase().includes(needle)).sort((a,b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))) }, [data.media, search, status])
   const openUpload = () => { setFile(null); setAltText(''); setUploadOpen(true) }
-  const upload = async (event: FormEvent) => { event.preventDefault(); if (!file) return; if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 6 * 1024 * 1024) return; try { await onUpload(file,altText); setUploadOpen(false); setFile(null); setAltText('') } catch { /* toast global */ } }
-  const saveAlt = async (event: FormEvent) => { event.preventDefault(); if (!editing) return; try { await onUpdate(editing.media_id,altText); setEditing(null) } catch { /* toast global */ } }
+  const upload = async (event: FormEvent) => { event.preventDefault(); if (!file) return; if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 6 * 1024 * 1024) return; try { await onUpload(file,altText); setUploadOpen(false); setFile(null); setAltText('') } catch { /* feedback global */ } }
+  const saveAlt = async (event: FormEvent) => { event.preventDefault(); if (!editing) return; try { await onUpdate(editing.media_id,altText); setEditing(null) } catch { /* feedback global */ } }
   const safeRestore = (media: CmsMedia) => { void onRestore(media).catch(() => undefined) }
 
   return (
