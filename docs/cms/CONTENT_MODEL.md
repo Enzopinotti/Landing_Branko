@@ -1,20 +1,20 @@
 # Modelo de contenido — CMS Branko Iriart
 
-> Borrador funcional previo a implementación.
+> Modelo funcional previo a la implementación del panel.
 
-## Objetivo del modelo
+## Objetivo
 
-Representar únicamente el contenido que Branko necesita administrar, sin convertir el panel en un constructor de páginas. El diseño, las animaciones y la composición visual permanecen en el repositorio de la landing.
+Representar sólo el contenido que Branko necesita administrar. El CMS no es un constructor visual: diseño, SCSS, animaciones, composición, layout y componentes permanecen en `Landing_Branko`.
 
-Los contenidos pueden referenciar imágenes mediante `media_id`. Los binarios nunca se almacenan en Sheets.
+Las imágenes se gestionan mediante una biblioteca central (`CMS_Media`) y vínculos reutilizables (`CMS_MediaLinks`). Los binarios nunca se guardan en Sheets.
 
-## 1. CMS_Settings
+## CMS_Settings
 
-Una única configuración activa para datos globales.
+Singleton de datos globales.
 
-Campos conceptuales:
+Campos:
 
-- `id`
+- `settings_id`
 - `site_name`
 - `professional_name`
 - `professional_license`
@@ -27,24 +27,28 @@ Campos conceptuales:
 - `followers_metric`
 - `treatments_metric`
 - `personalized_metric`
+- `status`
+- `created_at`
 - `updated_at`
+- `archived_at`
 
-## 2. CMS_Content
+## CMS_Content
 
-Contenido textual singleton por bloque. Cada registro identifica una pieza concreta mediante una `content_key` estable.
+Piezas de texto identificadas por `content_key` estable.
 
-Campos conceptuales:
+Campos:
 
-- `id`
+- `content_id`
 - `content_key`
 - `label`
 - `value`
+- `value_type`
 - `status`
+- `created_at`
 - `updated_at`
+- `archived_at`
 
-Claves iniciales previstas:
-
-### Hero
+Ejemplos de claves:
 
 - `hero.badge`
 - `hero.title_primary`
@@ -52,36 +56,15 @@ Claves iniciales previstas:
 - `hero.subtitle`
 - `hero.primary_cta_label`
 - `hero.secondary_cta_label`
-
-### Tratamientos — encabezado
-
 - `treatments.eyebrow`
 - `treatments.title_primary`
 - `treatments.title_accent`
 - `treatments.description`
-- `treatments.help_text`
-- `treatments.help_cta_label`
-
-### Sobre Branko
-
 - `about.eyebrow`
-- `about.paragraph_1`
-- `about.paragraph_2`
-- `about.paragraph_3`
 - `about.quote`
-- `about.cta_label`
-
-### Resultados
-
 - `results.eyebrow`
 - `results.title_primary`
 - `results.title_accent`
-- `results.before_placeholder`
-- `results.after_placeholder`
-- `results.testimonials_title`
-
-### Contacto
-
 - `contact.eyebrow`
 - `contact.title_primary`
 - `contact.title_accent`
@@ -89,98 +72,83 @@ Claves iniciales previstas:
 - `contact.cta_label`
 - `contact.faq_title`
 
-No se guardan estilos, clases CSS, tamaños, colores, coordenadas ni estructura HTML.
+No se guardan estilos, clases CSS ni HTML libre.
 
-## 3. CMS_Treatments
+## CMS_Treatments
 
 Una fila por tratamiento.
 
-Campos conceptuales:
-
-- `id` UUID
+- `treatment_id` UUID
 - `slug`
 - `title`
 - `subtitle`
 - `description`
 - `tag`
 - `icon_key`
-- `image_media_id` opcional
 - `sort_order`
-- `status` (`draft` / `published` / `archived`)
+- `status`
 - `created_at`
 - `updated_at`
 - `archived_at`
 
-Reglas:
+Una imagen opcional se vincula desde `CMS_MediaLinks` con `entity_type=treatment` y, por ejemplo, `field_key=cover_image`.
 
-- crear, editar, ordenar, publicar y archivar;
-- `icon_key` limitado a íconos soportados por la landing;
-- sin HTML libre en descripción;
-- una imagen puede reutilizarse mediante `image_media_id`.
-
-## 4. CMS_Locations
+## CMS_Locations
 
 Una fila por lugar de atención.
 
-Campos conceptuales:
-
-- `id` UUID
+- `location_id` UUID
 - `city`
 - `name`
 - `address`
 - `secondary_text`
 - `external_url`
-- `image_media_id` opcional
 - `sort_order`
 - `status`
 - `created_at`
 - `updated_at`
 - `archived_at`
 
-## 5. CMS_ResultCases
+Una imagen se vincula con `entity_type=location` y `field_key=cover_image`.
 
-Una fila por caso dentro de Resultados.
+## CMS_ResultCases
 
-Campos conceptuales:
+Una fila por caso de resultado.
 
-- `id` UUID
+- `result_case_id` UUID
 - `category`
 - `title`
 - `description`
-- `before_media_id` opcional
-- `after_media_id` opcional
 - `sort_order`
 - `status`
 - `created_at`
 - `updated_at`
 - `archived_at`
 
-Esta entidad sí contempla las imágenes administrables de antes/después cuando Branko entregue material real aprobado.
+Las comparativas usan vínculos separados, por ejemplo:
 
-## 6. CMS_Testimonials
+- `field_key=before_image`
+- `field_key=after_image`
 
-Una fila por testimonio.
+Esto permite reemplazar una imagen sin alterar el registro del caso y reutilizar el mismo archivo si fuese necesario.
 
-Campos conceptuales:
+## CMS_Testimonials
 
-- `id` UUID
+- `testimonial_id` UUID
 - `display_name`
 - `text`
 - `service`
-- `avatar_media_id` opcional
 - `sort_order`
 - `status`
 - `created_at`
 - `updated_at`
 - `archived_at`
 
-## 7. CMS_FAQs
+Un avatar opcional usa `entity_type=testimonial` y `field_key=avatar`.
 
-Una fila por pregunta frecuente.
+## CMS_FAQs
 
-Campos conceptuales:
-
-- `id` UUID
+- `faq_id` UUID
 - `question`
 - `answer`
 - `sort_order`
@@ -189,150 +157,136 @@ Campos conceptuales:
 - `updated_at`
 - `archived_at`
 
-## 8. CMS_Media
+## CMS_Media
 
-Biblioteca central de imágenes.
-
-Campos conceptuales:
+Biblioteca única de archivos de imagen.
 
 - `media_id` UUID
-- `file_id` identificador interno de Google Drive
+- `file_id` de Google Drive
 - `file_name`
 - `mime_type`
 - `file_size`
+- `drive_url`
 - `public_url`
-- `drive_url` sólo para administración/soporte
 - `alt_text`
-- `entity_type` opcional
-- `entity_id` opcional
+- `status`
+- `created_at`
+- `updated_at`
+- `archived_at`
+- `metadata_json`
+
+Reglas:
+
+- v1 acepta JPEG, PNG y WebP;
+- máximo inicial de 6 MB por imagen;
+- base64 sólo existe durante el upload;
+- Drive almacena el binario;
+- Sheets almacena metadata;
+- `media_id` es la identidad lógica;
+- una imagen puede tener más de un vínculo;
+- una imagen con vínculos activos no se puede archivar/eliminar;
+- el panel debe permitir subir una nueva o elegir una existente;
+- `alt_text` forma parte de la metadata administrable.
+
+## CMS_MediaLinks
+
+Relación entre una imagen y un campo visual del CMS.
+
+- `media_link_id` UUID
+- `media_id`
+- `entity_type`
+- `entity_id`
+- `field_key`
 - `sort_order`
 - `status`
-- `metadata_json`
 - `created_at`
 - `updated_at`
 - `archived_at`
 
-Reglas:
+Ejemplos:
 
-- `media_id` es la referencia utilizada por las entidades del CMS;
-- `file_id` no sustituye la identidad lógica del registro;
-- base64 sólo existe durante el transporte del upload y no se persiste;
-- la imagen debe pasar validaciones de MIME y tamaño;
-- una imagen puede ser reutilizada por más de un campo/contenido;
-- `alt_text` debe poder editarse;
-- el panel debe poder seleccionar una imagen existente además de subir una nueva;
-- borrar una referencia de una entidad no implica borrar automáticamente el archivo de Drive;
-- la eliminación definitiva de un archivo requiere una operación explícita y validación de referencias.
+```text
+media_01 -> result_case_01 -> before_image
+media_02 -> result_case_01 -> after_image
+media_03 -> treatment_02   -> cover_image
+media_03 -> location_01    -> cover_image
+```
 
-## 9. _AuditLog
+La última línea muestra el motivo de separar media y vínculos: **una misma imagen puede reutilizarse en diferentes lugares sin duplicar el archivo en Drive**.
 
-Registro de cambios administrativos.
+## _AuditLog
 
-Campos conceptuales:
-
-- `id` UUID
+- `audit_id` UUID
 - `created_at`
 - `actor`
+- `channel`
 - `entity`
 - `entity_id`
 - `action`
 - `before_json`
 - `after_json`
 
-Acciones mínimas:
+Incluye login, logout, create, update, archive, restore, upload, link/unlink de media y cambio/reset de contraseña.
 
-- `login`
-- `logout`
-- `create`
-- `update`
-- `publish`
-- `archive`
-- `restore`
-- `upload_media`
-- `change_password`
-
-## 10. _System
-
-Metadatos técnicos.
-
-Campos conceptuales:
+## _System
 
 - `key`
 - `value`
 - `updated_at`
 
-Valores previstos:
+Claves iniciales:
 
 - `schema_version`
 - `app_version`
-- `setup_completed_at`
+- `last_setup_at`
 
-## Bootstrap público esperado
+## Bootstrap público
 
-Conceptualmente la landing recibe un único objeto:
+La landing recibe conceptualmente:
 
 ```text
 site
 content
-locations[]
 treatments[]
-resultCases[]
-testimonials[]
-faqs[]
-media{}
-meta
-```
-
-`media` puede resolverse como mapa indexado por `media_id` para evitar repetir metadata en cada entidad.
-
-Sólo se incluyen registros publicados y no archivados. Las colecciones llegan ordenadas por `sort_order`.
-
-## Workspace administrativo esperado
-
-El workspace del panel puede incluir:
-
-```text
-settings
-content
 locations[]
-treatments[]
 resultCases[]
 testimonials[]
 faqs[]
 media[]
-session/meta
+mediaLinks[]
+meta
 ```
 
-El workspace no incluye secretos, hash, salt ni IDs de configuración sensibles.
+Sólo salen registros `published` y no archivados.
 
-## Fallback en frontend
+## Workspace administrativo
 
-`Landing_Branko` mantiene `defaultContent` con la misma forma estructural que el bootstrap.
+El panel recibe todas las entidades necesarias para editar, incluyendo drafts/archivados según la vista, pero nunca recibe:
 
-Sirve para:
+- password;
+- hash;
+- salt;
+- Script Properties;
+- IDs/configuración interna que no necesite la UI.
 
-- desarrollar sin Apps Script;
-- evitar una landing vacía si el CMS falla;
-- actuar como snapshot conocido para publicación.
+## Fallback frontend
 
-Las imágenes administrables deben tener también un fallback estático cuando el diseño lo requiera.
+`Landing_Branko` mantendrá `defaultContent` con la misma forma estructural del bootstrap. La landing debe poder renderizar aunque Apps Script esté temporalmente indisponible.
 
-## Fuera del modelo CMS v1
+## Fuera del CMS v1
 
-- colores;
-- tipografías;
+- colores y tipografías;
 - animaciones;
-- orden macro de secciones;
+- layout;
 - componentes visuales;
-- preloader;
-- estructura del navbar/footer;
 - edición gráfica de imágenes;
-- videos administrables;
-- agenda o turnos;
-- usuarios/roles múltiples.
+- video administrable;
+- agenda/turnos;
+- usuarios y roles múltiples;
+- creación libre de secciones.
 
-La sección adicional incluida comercialmente permanece fuera del CMS salvo ampliación expresa.
+La sección adicional incluida comercialmente sigue fuera del CMS salvo ampliación expresa.
 
-## Decisión pendiente antes de implementar
+## Cierre del schema
 
-Cuando Branko devuelva el relevamiento final debemos mapear cada respuesta a este modelo y marcar, campo por campo, cuáles inputs admiten imagen. Recién entonces se congela el schema v1.
+Antes de congelar v1 se mapea el relevamiento final del cliente contra estas entidades y se define, campo por campo, qué entradas aceptan imagen y qué `field_key` utiliza cada una.
