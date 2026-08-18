@@ -1,27 +1,19 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 
-const srcDir = fileURLToPath(new URL('./src/', import.meta.url))
-
-function sourceAliasPlugin(): Plugin {
-  return {
-    name: 'branko-source-alias',
-    enforce: 'pre',
-    async resolveId(source, importer) {
-      if (!source.startsWith('@/')) return null
-      return this.resolve(path.resolve(srcDir, source.slice(2)), importer, { skipSelf: true })
-    },
-  }
-}
+const cmsDir = fileURLToPath(new URL('./src/cms/', import.meta.url))
+const assetsDir = fileURLToPath(new URL('./src/assets/', import.meta.url))
+const stylesDir = fileURLToPath(new URL('./src/styles/', import.meta.url))
 
 export default defineConfig({
-  plugins: [sourceAliasPlugin(), react()],
+  plugins: [react()],
   resolve: {
-    alias: {
-      '@': srcDir,
-    },
+    alias: [
+      { find: /^@\/cms\/(.+)$/, replacement: `${cmsDir}$1` },
+      { find: /^@\/assets\/(.+)$/, replacement: `${assetsDir}$1` },
+      { find: /^@\/styles\/(.+)$/, replacement: `${stylesDir}$1` },
+    ],
   },
   css: {
     preprocessorOptions: {
