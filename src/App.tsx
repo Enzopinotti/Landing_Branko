@@ -10,12 +10,13 @@ import Contact from './components/Contact'
 import Footer from './components/Footer'
 import SmoothScroll from './components/SmoothScroll'
 import Preloader from './components/Preloader'
+import { PublicContentProvider } from './cms/publicContent'
 
 function App() {
   const [loading, setLoading] = useState(true);
 
   return (
-    <>
+    <PublicContentProvider>
       {loading && <Preloader onComplete={() => setLoading(false)} />}
       <SmoothScroll>
         <div className={`app ${loading ? 'overflow-hidden h-screen' : ''}`}>
@@ -30,7 +31,7 @@ function App() {
           <Footer />
         </div>
       </SmoothScroll>
-    </>
+    </PublicContentProvider>
   )
 }
 
