@@ -27,30 +27,32 @@
   justify-content: center;
   background: transparent;
   filter: drop-shadow(0 0 28px rgba(201, 169, 110, 0.16));
-  overflow: hidden; // Importante para el brillo
+  overflow: hidden;
 
-  // Capa de brillo dinámico
   &::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: -150%;
-    width: 100%;
-    height: 100%;
+    top: -8%;
+    left: -175%;
+    width: 78%;
+    height: 116%;
     background: linear-gradient(
       90deg,
-      transparent,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0.35),
-      rgba(255, 255, 255, 0.08),
-      transparent
+      transparent 0%,
+      rgba(201, 169, 110, 0.05) 18%,
+      rgba(255, 244, 214, 0.18) 38%,
+      rgba(255, 255, 255, 0.48) 50%,
+      rgba(255, 244, 214, 0.18) 62%,
+      rgba(201, 169, 110, 0.05) 82%,
+      transparent 100%
     );
-    transform: skewX(-25deg);
+    transform: skewX(-22deg);
+    filter: blur(1px);
     z-index: 1;
+    opacity: 0;
     pointer-events: none;
   }
 
-  // Responsive logo size
   @media (max-width: 768px) {
     width: 220px;
     height: 187px;
@@ -64,27 +66,51 @@
   object-fit: contain;
 }
 
-// Clase para disparar el brillo desde GSAP
 .logoShine::before {
-  animation: shine 1.2s ease-out forwards;
+  animation: shine 3.25s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
 
 @keyframes shine {
-  0% { left: -150%; }
-  100% { left: 150%; }
+  0% {
+    left: -175%;
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.4;
+  }
+  18% {
+    opacity: 0.95;
+  }
+  58% {
+    left: 175%;
+    opacity: 0.95;
+  }
+  68% {
+    left: 175%;
+    opacity: 0;
+  }
+  100% {
+    left: 175%;
+    opacity: 0;
+  }
 }
 
 .glow {
   position: absolute;
-  width: 380px;
-  height: 380px;
-  background: radial-gradient(circle, rgba(201, 169, 110, 0.15) 0%, transparent 70%);
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(
+    circle,
+    rgba(201, 169, 110, 0.18) 0%,
+    rgba(201, 169, 110, 0.07) 38%,
+    transparent 72%
+  );
   border-radius: 50%;
   pointer-events: none;
   z-index: -1;
 
   @media (max-width: 768px) {
-    width: 260px;
-    height: 260px;
+    width: 280px;
+    height: 280px;
   }
 }

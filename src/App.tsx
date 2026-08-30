@@ -11,28 +11,42 @@ import Footer from './components/Footer'
 import SmoothScroll from './components/SmoothScroll'
 import Preloader from './components/Preloader'
 import Seo from './components/Seo'
-import { PublicContentProvider } from './cms/publicContent'
+import { PublicContentProvider, usePublicContent } from './cms/publicContent'
 
-function App() {
-  const [loading, setLoading] = useState(true);
+function PublicLanding() {
+  const { loadState } = usePublicContent()
+  const [preloaderFinished, setPreloaderFinished] = useState(false)
+  const cmsReady = loadState === 'ready'
 
   return (
+    <>
+      {!preloaderFinished && <Preloader ready={cmsReady} onComplete={() => setPreloaderFinished(true)} />}
+      {cmsReady && (
+        <>
+          <Seo />
+          <SmoothScroll>
+            <div className={`app ${!preloaderFinished ? 'overflow-hidden h-screen' : ''}`}>
+              <Navbar hideInitial={!preloaderFinished} />
+              <main>
+                <Hero />
+                <Services />
+                <About />
+                <Results />
+                <Contact />
+              </main>
+              <Footer />
+            </div>
+          </SmoothScroll>
+        </>
+      )}
+    </>
+  )
+}
+
+function App() {
+  return (
     <PublicContentProvider>
-      <Seo />
-      {loading && <Preloader onComplete={() => setLoading(false)} />}
-      <SmoothScroll>
-        <div className={`app ${loading ? 'overflow-hidden h-screen' : ''}`}>
-          <Navbar hideInitial={loading} />
-          <main>
-            <Hero />
-            <Services />
-            <About />
-            <Results />
-            <Contact />
-          </main>
-          <Footer />
-        </div>
-      </SmoothScroll>
+      <PublicLanding />
     </PublicContentProvider>
   )
 }

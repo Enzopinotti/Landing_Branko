@@ -50,9 +50,12 @@ const fallback: CmsPublicBootstrapData = {
   meta: { app:'Branko Iriart CMS',version:'fallback',schemaVersion:'1',generatedAt:'' },
 }
 
+type PublicContentLoadState = 'loading' | 'ready'
+
 type PublicContentContextValue = {
   data: CmsPublicBootstrapData
   remoteActive: boolean
+  loadState: PublicContentLoadState
   text: (key: string) => string
   whatsappUrl: (kind?: 'booking' | 'consult') => string
   mediaFor: (entityType: string, entityId: string, fieldKey: string) => CmsMedia | undefined
@@ -66,34 +69,46 @@ function buildWhatsapp(phone: string, message?: string) { const base = `https://
 export function PublicContentProvider({ children }: { children: ReactNode }) {
   const [data,setData] = useState<CmsPublicBootstrapData>(fallback)
   const [remoteActive,setRemoteActive] = useState(false)
+  const [loadState,setLoadState] = useState<PublicContentLoadState>('loading')
 
   useEffect(() => {
     let active = true
-    const cached = sessionStorage.getItem('branko_public_bootstrap_v1')
-    if (cached) {
+    let retryTimer: number | undefined
+    let attempt = 0
+
+    const loadRemote = async () => {
       try {
-        const parsed = JSON.parse(cached) as CmsPublicBootstrapData
-        if (parsed.content?.['cms.public_ready'] === 'true') { setData({ ...parsed, site:{...fallback.site,...parsed.site}, content:{...fallback.content,...parsed.content} }); setRemoteActive(true) }
-      } catch { sessionStorage.removeItem('branko_public_bootstrap_v1') }
+        const remote = await cmsClient.bootstrap()
+        if (!active) return
+        if (remote.content?.['cms.public_ready'] !== 'true') throw new Error('El CMS público todavía no está listo.')
+        const merged = { ...remote, site:{...fallback.site,...remote.site}, content:{...fallback.content,...remote.content} }
+        setData(merged)
+        setRemoteActive(true)
+        setLoadState('ready')
+      } catch {
+        if (!active) return
+        attempt += 1
+        const retryDelay = Math.min(1200 + attempt * 800, 5000)
+        retryTimer = window.setTimeout(() => { void loadRemote() }, retryDelay)
+      }
     }
-    cmsClient.bootstrap().then((remote) => {
-      if (!active || remote.content?.['cms.public_ready'] !== 'true') return
-      const merged = { ...remote, site:{...fallback.site,...remote.site}, content:{...fallback.content,...remote.content} }
-      setData(merged); setRemoteActive(true)
-      try { sessionStorage.setItem('branko_public_bootstrap_v1',JSON.stringify(merged)) } catch { /* storage optional */ }
-    }).catch(() => undefined)
-    return () => { active = false }
+
+    void loadRemote()
+    return () => {
+      active = false
+      if (retryTimer) window.clearTimeout(retryTimer)
+    }
   }, [])
 
   const value = useMemo<PublicContentContextValue>(() => ({
-    data, remoteActive,
+    data, remoteActive, loadState,
     text: (key) => data.content[key] ?? fallback.content[key] ?? '',
     whatsappUrl: (kind='booking') => buildWhatsapp(data.site.whatsapp_number, kind === 'booking' ? data.site.whatsapp_booking_message : data.site.whatsapp_consult_message),
     mediaFor: (entityType,entityId,fieldKey) => {
       const link = data.mediaLinks.find((item: CmsMediaLink) => item.entity_type === entityType && item.entity_id === entityId && item.field_key === fieldKey)
       return data.media.find((item: CmsMedia) => item.media_id === link?.media_id)
     },
-  }), [data,remoteActive])
+  }), [data,remoteActive,loadState])
 
   return <PublicContentContext.Provider value={value}>{children}</PublicContentContext.Provider>
 }
