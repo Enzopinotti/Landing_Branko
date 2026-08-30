@@ -1,66 +1,37 @@
 import styles from './Footer.module.scss'
 import brankoMonogram from '../assets/branko-monogram.svg'
+import { usePublicContent } from '../cms/publicContent'
 
 export default function Footer() {
+  const { data, text, whatsappUrl } = usePublicContent()
+  const primaryLocation = data.locations[0]
   return (
     <footer className={styles.footer}>
       <div className="container">
         <div className={styles.top}>
-          {/* Brand */}
           <div className={styles.brand}>
-            <div className={styles.logo}>
-              <img src={brankoMonogram} alt="" aria-hidden="true" className={styles.logoMark} />
-              <div>
-                <p className={styles.logoName}>BRANKO IRIART</p>
-                <p className={styles.logoSub}>ESTÉTICA FACIAL</p>
-              </div>
-            </div>
-            <p className={styles.tagline}>
-              Tu mejor versión, desde adentro hacia afuera.
-            </p>
+            <div className={styles.logo}><img src={brankoMonogram} alt="" aria-hidden="true" className={styles.logoMark} /><div><p className={styles.logoName}>{String(data.site.site_name || 'BRANKO IRIART').toUpperCase()}</p><p className={styles.logoSub}>ESTÉTICA FACIAL</p></div></div>
+            <p className={styles.tagline}>{text('footer.tagline')}</p>
           </div>
-
-          {/* Links */}
           <div className={styles.links}>
-            <p className={styles.linksTitle}>Tratamientos</p>
-            {['Botox', 'Plasma PRP', 'Ácido Hialurónico', 'Bioestimulación', 'Peeling', 'Limpieza Facial'].map(l => (
-              <a key={l} href="#tratamientos" className={styles.link}>{l}</a>
-            ))}
+            <p className={styles.linksTitle}>{text('footer.treatments_title')}</p>
+            {data.treatments.slice(0, 6).map((treatment) => <a key={treatment.treatment_id} href="#tratamientos" className={styles.link}>{treatment.title}</a>)}
           </div>
-
           <div className={styles.links}>
-            <p className={styles.linksTitle}>Consultorios</p>
-            <p className={styles.linkText}>Ensenada</p>
-            <p className={styles.linkText}>Moreno 119, e/ Cestino y Alberdi</p>
-            <br />
-            <p className={styles.linkText}>IMP 15.493</p>
-            <a href="https://instagram.com/biesteticafacial" target="_blank" rel="noreferrer" className={styles.link}>
-              @biesteticafacial
-            </a>
+            <p className={styles.linksTitle}>{text('footer.locations_title')}</p>
+            {primaryLocation && <><p className={styles.linkText}>{primaryLocation.city}</p><p className={styles.linkText}>{primaryLocation.address}</p><br /></>}
+            <p className={styles.linkText}>{data.site.professional_license || ''}</p>
+            <a href={data.site.instagram_url || '#'} target="_blank" rel="noreferrer" className={styles.link}>{data.site.instagram_handle || '@biesteticafacial'}</a>
           </div>
-
-          {/* CTA block */}
           <div className={styles.ctaBlock}>
-            <p className={styles.ctaText}>¿Listo para transformarte?</p>
-            <a
-              href="https://wa.me/541173608299"
-              target="_blank"
-              rel="noreferrer"
-              className={styles.ctaBtn}
-            >
-              Reservar turno
-            </a>
-            <p className={styles.phone}>+54 11 7360-8299</p>
+            <p className={styles.ctaText}>{text('footer.cta_text')}</p>
+            <a href={whatsappUrl('booking')} target="_blank" rel="noreferrer" className={styles.ctaBtn}>{text('footer.cta_label')}</a>
+            <p className={styles.phone}>{data.site.whatsapp_number ? `+${String(data.site.whatsapp_number).replace(/^(54)(\d{2})(\d{4})(\d{4})$/, '$1 $2 $3-$4')}` : ''}</p>
           </div>
         </div>
-
         <div className={styles.bottom}>
-          <p className={styles.copy}>
-            © {new Date().getFullYear()} Dr. Branko Iriart · Todos los derechos reservados
-          </p>
-          <p className={styles.disclaimer}>
-            Los resultados pueden variar. Consulte con un profesional antes de realizar cualquier procedimiento.
-          </p>
+          <p className={styles.copy}>© {new Date().getFullYear()} {data.site.professional_name || 'Dr. Branko Iriart'} · Todos los derechos reservados</p>
+          <p className={styles.disclaimer}>{text('footer.disclaimer')}</p>
         </div>
       </div>
     </footer>

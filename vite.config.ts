@@ -1,22 +1,29 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import { fileURLToPath, URL } from 'node:url'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const resolveFile = (relativePath: string) => fileURLToPath(new URL(relativePath, import.meta.url))
+const srcDir = resolveFile('./src')
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': srcDir,
     },
   },
   css: {
     preprocessorOptions: {
       scss: {
         api: 'modern-compiler',
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolveFile('./index.html'),
+        admin: resolveFile('./admin/index.html'),
       },
     },
   },
