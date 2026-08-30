@@ -13,10 +13,12 @@ const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: (i: number) => ({ opaci
 export default function About() {
   const sectionRef = useRef<HTMLElement>(null);
   const { data, text, whatsappUrl } = usePublicContent()
+  const primaryLocation = data.locations[0]
+  const secondaryLocation = data.locations[1]
   const credentials = [
     { value: data.site.professional_license || '—', label: 'Matrícula Profesional' },
-    { value: data.locations[0]?.city || 'Ensenada', label: 'Consultorio Principal' },
-    { value: data.locations[1]?.city || 'La Plata', label: 'Consultorio Secundario' },
+    { value: primaryLocation?.city || 'Ensenada', label: primaryLocation?.name || 'Consultorio' },
+    { value: secondaryLocation?.city || 'La Plata', label: secondaryLocation?.name || 'Consultorio' },
     { value: data.site.patients_metric || '—', label: 'Pacientes Satisfechos' },
     { value: data.site.treatments_metric || String(data.treatments.length), label: 'Tratamientos Estéticos' },
     { value: data.site.personalized_metric || '100%', label: 'Enfoque personalizado' },
@@ -38,7 +40,7 @@ export default function About() {
         <div className={styles.inner}>
           <div className={`${styles.left} about-left`}>
             <div className={styles.mono}><span className={styles.monoLetter}>B</span><span className={styles.monoLetter}>I</span></div>
-            <div className={styles.credentials}>{credentials.map((item) => <div key={item.label} className={styles.cred}><span className={styles.credValue}>{item.value}</span><span className={styles.credLabel}>{item.label}</span></div>)}</div>
+            <div className={styles.credentials}>{credentials.map((item) => <div key={`${item.value}-${item.label}`} className={styles.cred}><span className={styles.credValue}>{item.value}</span><span className={styles.credLabel}>{item.label}</span></div>)}</div>
             <div className={styles.instaBadge}><span className={styles.instaIcon}>@</span><div><p className={styles.instaHandle}>{String(data.site.instagram_handle || '@biesteticafacial').replace(/^@/,'')}</p><p className={styles.instaFollowers}>{data.site.followers_metric || ''} seguidores</p></div></div>
           </div>
           <div className={styles.right}>
