@@ -7,47 +7,13 @@
   @include section-divider;
 }
 
-/* Header */
-.header {
-  text-align: center;
-  max-width: 600px;
-  margin: 0 auto 5rem;
-}
+.header { text-align: center; max-width: 600px; margin: 0 auto 5rem; }
+.label { @include label-style; margin-bottom: 1.5rem; }
+.labelLine { display: block; width: 28px; height: 1px; background: $gold; }
+.title { font-family: $font-heading; font-size: clamp(2.5rem, 4vw, 3.8rem); font-weight: 300; line-height: 1.1; color: $cream; margin-bottom: 1.5rem; }
+.title em { font-style: italic; color: $gold; }
+.desc { font-size: 0.9rem; font-weight: 300; color: $cream-muted; line-height: 1.8; }
 
-.label {
-  @include label-style;
-  margin-bottom: 1.5rem;
-}
-
-.labelLine {
-  display: block;
-  width: 28px;
-  height: 1px;
-  background: $gold;
-}
-
-.title {
-  font-family: $font-heading;
-  font-size: clamp(2.5rem, 4vw, 3.8rem);
-  font-weight: 300;
-  line-height: 1.1;
-  color: $cream;
-  margin-bottom: 1.5rem;
-}
-
-.title em {
-  font-style: italic;
-  color: $gold;
-}
-
-.desc {
-  font-size: 0.9rem;
-  font-weight: 300;
-  color: $cream-muted;
-  line-height: 1.8;
-}
-
-/* Grid */
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -57,138 +23,118 @@
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 4rem;
+  align-items: stretch;
 }
 
-/* Card */
 .card {
   position: relative;
+  min-width: 0;
   background: $black-card;
-  padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 0;
   transition: background 0.35s $ease-out;
   cursor: default;
 }
+.card:hover { background: $black-hover; }
+.card:hover .cardCta { color: $gold; gap: 0.6rem; }
+.card:hover .arrow { transform: translateX(4px); }
 
-.card:hover {
-  background: $black-hover;
-}
+.cardImage { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: #050505; border-bottom: 1px solid $border; }
+.cardImage::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(3,3,3,0.52)); pointer-events: none; }
+.cardImage img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.7s $ease-out, filter 0.4s; }
+.card:hover .cardImage img { transform: scale(1.025); }
 
-.card:hover .cardCta {
-  color: $gold;
-  gap: 0.6rem;
-}
+.cardContent { position: relative; display: flex; flex: 1; flex-direction: column; padding: 2.5rem 2rem; }
+.cardTag { position: absolute; top: 1.2rem; right: 1.2rem; font-size: 0.6rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: $black; background: $gold; padding: 3px 8px; border-radius: 1px; }
+.cardIcon { font-size: 1.4rem; color: $gold; margin-bottom: 1.5rem; line-height: 1; }
+.cardTitle { font-family: $font-heading; font-size: 1.4rem; font-weight: 500; color: $cream; margin-bottom: 0.25rem; }
+.cardSub { font-size: 0.68rem; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: $gold; margin-bottom: 1.2rem; }
+.cardDesc { font-size: 0.85rem; font-weight: 300; color: $cream-muted; line-height: 1.7; flex: 1; margin-bottom: 1.4rem; }
 
-.card:hover .arrow {
-  transform: translateX(4px);
-}
-
-/* Tag */
-.cardTag {
-  position: absolute;
-  top: 1.2rem;
-  right: 1.2rem;
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: $black;
-  background: $gold;
-  padding: 3px 8px;
-  border-radius: 1px;
-}
-
-.cardIcon {
-  font-size: 1.4rem;
-  color: $gold;
-  margin-bottom: 1.5rem;
-  line-height: 1;
-}
-
-.cardTitle {
-  font-family: $font-heading;
-  font-size: 1.4rem;
-  font-weight: 500;
-  color: $cream;
-  margin-bottom: 0.25rem;
-}
-
-.cardSub {
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: $gold;
-  margin-bottom: 1.2rem;
-}
-
-.cardDesc {
-  font-size: 0.85rem;
-  font-weight: 300;
-  color: $cream-muted;
-  line-height: 1.7;
-  flex: 1;
-  margin-bottom: 2rem;
-}
-
-.cardCta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: $cream-muted;
-  text-decoration: none;
-  transition: color 0.25s, gap 0.25s $ease-out;
-  margin-top: auto;
-}
-
-.arrow {
-  display: inline-block;
-  transition: transform 0.25s $ease-out;
-}
-
-/* Bottom CTA */
-.bottomCta {
+.detailToggle {
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 2.5rem;
-  padding: 2.5rem;
-  border: 1px solid $border;
-  border-radius: 4px;
-  background: $gold-dim;
-}
-
-.bottomText {
-  font-size: 0.9rem;
-  font-weight: 300;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1.2rem;
+  padding: 0.75rem 0;
+  border: 0;
+  border-top: 1px solid rgba(201,169,110,0.12);
+  border-bottom: 1px solid rgba(201,169,110,0.12);
   color: $cream-muted;
+  background: transparent;
+  cursor: pointer;
+  font: 600 0.66rem $font-body;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  transition: color 0.2s, border-color 0.2s;
 }
+.detailToggle span { color: $gold; font-size: 1rem; line-height: 1; }
+.detailToggle:hover, .detailToggle:focus-visible { color: $gold; border-color: rgba(201,169,110,0.35); outline: 0; }
 
+.detailPanel { display: grid; gap: 1rem; margin: -0.2rem 0 1.5rem; padding: 1rem; border: 1px solid rgba(201,169,110,0.12); border-radius: 3px; background: rgba(201,169,110,0.035); animation: detailIn 0.25s ease both; }
+@keyframes detailIn { from { opacity: 0; transform: translateY(-4px); } }
+.detailPanel h4 { font-family: $font-heading; font-size: 1.15rem; font-weight: 500; color: $cream; }
+.detailPanel > p { color: $cream-muted; font-size: 0.79rem; line-height: 1.75; }
+.detailPanel ul { display: grid; gap: 0.45rem; padding: 0; margin: 0; list-style: none; }
+.detailPanel li { position: relative; padding-left: 1rem; color: $cream-muted; font-size: 0.75rem; line-height: 1.5; }
+.detailPanel li::before { content: '·'; position: absolute; left: 0.1rem; color: $gold; }
+.detailMeta { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.65rem; }
+.detailMeta span { display: grid; gap: 0.2rem; padding: 0.65rem; border: 1px solid rgba(255,255,255,0.06); color: $cream; font-size: 0.72rem; }
+.detailMeta small { color: $gold; font-size: 0.54rem; letter-spacing: 0.12em; text-transform: uppercase; }
+
+.cardCta { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.7rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: $cream-muted; text-decoration: none; transition: color 0.25s, gap 0.25s $ease-out; margin-top: auto; }
+.arrow { display: inline-block; transition: transform 0.25s $ease-out; }
+
+.visualBlock { margin: 0 0 4rem; padding: clamp(1.25rem,3vw,2rem); border: 1px solid $border; border-radius: 4px; background: linear-gradient(145deg, rgba(201,169,110,0.045), rgba(10,10,10,0.76)); }
+.visualBlockHeading { display: grid; gap: 0.55rem; max-width: 690px; margin-bottom: 1.5rem; }
+.visualBlockHeading > span { @include label-style; color: $gold; }
+.visualBlockHeading h3 { font-family: $font-heading; font-size: clamp(1.8rem,3vw,2.5rem); font-weight: 300; color: $cream; line-height: 1.08; }
+.visualBlockHeading h3 em { color: $gold; font-style: italic; }
+.visualBlockHeading p { color: $cream-muted; font-size: 0.8rem; line-height: 1.65; }
+.visualCarousel { position: relative; max-width: 900px; aspect-ratio: 16 / 9; min-height: 280px; overflow: hidden; margin: 0 auto; border: 1px solid rgba(201,169,110,0.16); border-radius: 3px; background: #050505; }
+.visualSlide { position: absolute; inset: 0; overflow: hidden; margin: 0; background: #050505; }
+.visualSlide img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.visualCaption { position: absolute; inset: auto 0 0; display: grid; gap: 0.2rem; padding: 3rem 1.5rem 1.25rem; background: linear-gradient(180deg, transparent, rgba(3,3,3,0.92)); }
+.visualCaption span { color: $gold; font-size: 0.58rem; letter-spacing: 0.13em; text-transform: uppercase; }
+.visualCaption strong { color: $cream; font-family: $font-heading; font-size: 1.35rem; font-weight: 500; }
+.visualCaption small { color: $cream-muted; font-size: 0.72rem; line-height: 1.45; }
+.carouselControls { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: 0.75rem; }
+.carouselNavigation { display: flex; align-items: center; gap: 1rem; }
+.carouselNavigation button, .carouselPause { min-height: 40px; padding: 0.45rem 0.75rem; border: 1px solid rgba(201,169,110,0.2); border-radius: 2px; color: $cream-muted; background: transparent; font: 600 0.66rem $font-body; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s; }
+.carouselNavigation button { min-width: 42px; font-size: 1rem; }
+.carouselNavigation button:hover, .carouselPause:hover, .carouselNavigation button:focus-visible, .carouselPause:focus-visible { color: $gold; border-color: rgba(201,169,110,0.5); outline: 0; }
+.carouselNavigation span { min-width: 4.5rem; color: $cream-muted; font-size: 0.65rem; letter-spacing: 0.12em; text-align: center; }
+
+.bottomCta { display: flex; align-items: center; justify-content: center; gap: 2.5rem; padding: 2.5rem; border: 1px solid $border; border-radius: 4px; background: $gold-dim; }
+.bottomText { font-size: 0.9rem; font-weight: 300; color: $cream-muted; }
 .bottomBtn {
   @include btn-gold;
   padding: 0.8rem 2rem;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.5;
 }
 
 @media (max-width: 900px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-
-  .bottomCta {
-    flex-direction: column;
-    gap: 1.5rem;
-    text-align: center;
-  }
+  .grid { grid-template-columns: 1fr; }
+  .bottomCta { flex-direction: column; gap: 1.5rem; text-align: center; }
 }
 
-@media (min-width: 601px) and (max-width: 900px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+@media (min-width: 601px) and (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+
+@media (max-width: 600px) {
+  .cardContent { padding: 2rem 1.35rem; }
+  .detailMeta { grid-template-columns: 1fr; }
+  .visualCarousel { aspect-ratio: 4 / 3; min-height: 230px; }
+  .visualCaption { padding: 2.5rem 1rem 1rem; }
+  .visualCaption strong { font-size: 1.15rem; }
+  .carouselControls { gap: 0.5rem; }
+  .carouselNavigation { gap: 0.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carouselNavigation button, .carouselPause { transition: none; }
 }

@@ -27,6 +27,17 @@
   gap: 0.5rem;
 }
 
+.portrait {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: 620px;
+  object-fit: cover;
+  object-position: center 28%;
+  border: 1px solid rgba(201,169,110,0.22);
+  border-radius: 4px;
+  background: $black-card;
+}
+
 .monoLetter {
   font-family: $font-heading;
   font-size: 6rem;
