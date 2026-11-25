@@ -333,8 +333,10 @@ function AdminApp() {
   const uploadMedia = async (file: File, altText: string) => {
     const base64 = await fileToDataUrl(file)
     const saved = await runMutation(() => cmsClient.uploadMedia(sessionToken, { fileName: file.name, mimeType: file.type, base64, altText }), 'Imagen subida a la biblioteca.')
-    const mediaData = (cache.media?.data as CmsMediaSectionData | undefined) || { media: [], mediaLinks: [] }
-    setSectionData('media', { ...mediaData, media: [...mediaData.media, saved] })
+    setCache((current) => {
+      const mediaData = (current.media?.data as CmsMediaSectionData | undefined) || { media: [], mediaLinks: [] }
+      return { ...current, media: { data: { ...mediaData, media: [...mediaData.media, saved] }, loadedAt: Date.now() } }
+    })
     return saved
   }
 
@@ -360,16 +362,18 @@ function AdminApp() {
 
   const linkMedia = async (payload: Record<string, unknown>) => {
     const saved = await runMutation(() => cmsClient.linkMedia(sessionToken, payload), 'Imagen vinculada.')
-    const mediaData = (cache.media?.data as CmsMediaSectionData | undefined) || { media: [], mediaLinks: [] }
     const entityType = String(payload.entityType || '')
     const entityId = String(payload.entityId || '')
     const fieldKey = String(payload.fieldKey || '')
-    const links = mediaData.mediaLinks.map((link) => (
-      link.status !== 'archived' && link.entity_type === entityType && link.entity_id === entityId && link.field_key === fieldKey
-        ? { ...link, status: 'archived' as const, archived_at: new Date().toISOString() }
-        : link
-    ))
-    setSectionData('media', { ...mediaData, mediaLinks: [...links, saved] })
+    setCache((current) => {
+      const mediaData = (current.media?.data as CmsMediaSectionData | undefined) || { media: [], mediaLinks: [] }
+      const links = mediaData.mediaLinks.map((link) => (
+        link.status !== 'archived' && link.entity_type === entityType && link.entity_id === entityId && link.field_key === fieldKey
+          ? { ...link, status: 'archived' as const, archived_at: new Date().toISOString() }
+          : link
+      ))
+      return { ...current, media: { data: { ...mediaData, mediaLinks: [...links, saved] }, loadedAt: Date.now() } }
+    })
     return saved
   }
 
@@ -443,7 +447,7 @@ function AdminApp() {
       return <SectionLoader />
     }
 
-    if (activeView === 'general') return <GeneralView settings={(currentEntry.data as CmsSettings[])[0]} busy={mutationBusy} onSave={saveSettings} />
+    if (activeView === 'general') return <GeneralView settings={(currentEntry.data as CmsSettings[])[0]} busy={mutationBusy} onSave={saveSettings} mediaData={cache.media?.data as CmsMediaSectionData | undefined} mediaLoading={!!loadingSections.media} onEnsureMedia={ensureMedia} onUploadMedia={uploadMedia} onLinkMedia={linkMedia} onUnlinkMedia={unlinkMedia} />
     if (activeView === 'content') return <ContentView records={currentEntry.data as CmsContentRecord[]} busy={mutationBusy} onSave={saveContent} />
     if (activeView === 'media') return <MediaView data={currentEntry.data as CmsMediaSectionData} busy={mutationBusy} onUpload={uploadMedia} onUpdate={updateMedia} onArchive={archiveMedia} onRestore={restoreMedia} />
     if (activeView === 'activity') return <ActivityView records={currentEntry.data as CmsAuditRecord[]} />

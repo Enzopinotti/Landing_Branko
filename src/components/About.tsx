@@ -12,7 +12,10 @@ const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: (i: number) => ({ opaci
 
 export default function About() {
   const sectionRef = useRef<HTMLElement>(null);
-  const { data, text, whatsappUrl } = usePublicContent()
+  const { data, text, whatsappUrl, mediaFor } = usePublicContent()
+  const professionalPhoto = data.site.settings_id
+    ? mediaFor('settings', data.site.settings_id, 'professional_photo')
+    : undefined
   const primaryLocation = data.locations[0]
   const secondaryLocation = data.locations[1]
   const credentials = [
@@ -39,7 +42,9 @@ export default function About() {
       <div className="container relative z-10">
         <div className={styles.inner}>
           <div className={`${styles.left} about-left`}>
-            <div className={styles.mono}><span className={styles.monoLetter}>B</span><span className={styles.monoLetter}>I</span></div>
+            {professionalPhoto
+              ? <img className={styles.portrait} src={professionalPhoto.public_url} alt={professionalPhoto.alt_text || `Retrato de ${data.site.professional_name || 'Dr. Branko Iriart'}`} loading="lazy" />
+              : <div className={styles.mono}><span className={styles.monoLetter}>B</span><span className={styles.monoLetter}>I</span></div>}
             <div className={styles.credentials}>{credentials.map((item) => <div key={`${item.value}-${item.label}`} className={styles.cred}><span className={styles.credValue}>{item.value}</span><span className={styles.credLabel}>{item.label}</span></div>)}</div>
             <div className={styles.instaBadge}><span className={styles.instaIcon}>@</span><div><p className={styles.instaHandle}>{String(data.site.instagram_handle || '@biesteticafacial').replace(/^@/,'')}</p><p className={styles.instaFollowers}>{data.site.followers_metric || ''} seguidores</p></div></div>
           </div>
