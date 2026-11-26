@@ -8,7 +8,7 @@ import styles from '../AdminApp.module.scss'
 const emptySettings: Partial<CmsSettings> = {
   site_name: '', professional_name: '', professional_license: '', whatsapp_number: '',
   whatsapp_booking_message: '', whatsapp_consult_message: '', instagram_handle: '', instagram_url: '',
-  patients_metric: '', followers_metric: '', treatments_metric: '', personalized_metric: '', treatments_carousel_interval_seconds: 3, status: 'published',
+  patients_metric: '', followers_metric: '', treatments_metric: '', personalized_metric: '', treatments_carousel_interval_seconds: 3, results_carousel_interval_seconds: 3, status: 'published',
 }
 
 function Field({ label, value, onChange, placeholder, help, textarea = false, type = 'text', wide = false, min, max, step }: {
@@ -75,9 +75,10 @@ export default function GeneralView({ settings, busy, onSave, mediaData, mediaLo
           <Field label="Enfoque personalizado" value={draft.personalized_metric || ''} onChange={(value) => set('personalized_metric', value)} placeholder="100%" />
         </div>
         <div className={styles.formDivider} />
-        <div className={styles.formSectionTitle}><h3>Galería de tratamientos</h3><p>Las imágenes asociadas a los tratamientos se muestran en una secuencia automática.</p></div>
+        <div className={styles.formSectionTitle}><h3>Carruseles de imágenes</h3><p>Configurá por separado cada cuánto cambia la galería de tratamientos y los casos de Resultados.</p></div>
         <div className={styles.formGrid}>
-          <Field label="Intervalo entre imágenes (segundos)" value={String(draft.treatments_carousel_interval_seconds ?? 3)} onChange={(value) => set('treatments_carousel_interval_seconds', value)} type="number" min={1} max={60} step={1} help="Elegí un valor entre 1 y 60 segundos. El valor inicial es 3." />
+          <Field label="Intervalo de Resultados (segundos)" value={String(draft.results_carousel_interval_seconds ?? 3)} onChange={(value) => set('results_carousel_interval_seconds', value)} type="number" min={1} max={60} step={1} help="Tiempo entre casos del carrusel Antes / Después." />
+          <Field label="Intervalo de Tratamientos (segundos)" value={String(draft.treatments_carousel_interval_seconds ?? 3)} onChange={(value) => set('treatments_carousel_interval_seconds', value)} type="number" min={1} max={60} step={1} help="Tiempo entre imágenes de ejemplo de los tratamientos." />
         </div>
         <div className={styles.formActionsSticky}><span>{dirty ? 'Hay cambios pendientes.' : 'Los datos están sincronizados.'}</span><button className={styles.primaryButton} type="submit" disabled={busy || !dirty}>{busy ? <Spinner /> : <Save size={17} />}{busy ? 'Guardando...' : 'Guardar cambios'}</button></div>
       </form>

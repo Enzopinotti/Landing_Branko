@@ -14,9 +14,7 @@ export const collectionDefinitions: Record<CmsCollectionKey, CollectionDefinitio
     key:'treatments',title:'Tratamientos',singular:'tratamiento',description:'Servicios visibles en la landing. Podés sumar explicación ampliada, usos e imágenes sin recargar la card inicial.',idField:'treatment_id',primaryField:'title',secondaryField:'subtitle',
     mediaSlots:[
       {key:'cover',label:'Imagen principal',help:'Foto representativa que aparece en la card y el detalle.'},
-      {key:'gallery_1',label:'Ejemplo 1',help:'Primer ejemplo o zona de aplicación.'},
-      {key:'gallery_2',label:'Ejemplo 2',help:'Segundo ejemplo o zona de aplicación.'},
-      {key:'gallery_3',label:'Ejemplo 3',help:'Tercer ejemplo o foto de proceso.'},
+      ...Array.from({length:10},(_,index)=>({key:`gallery_${index+1}`,label:`Ejemplo ${index+1}`,help:`Foto de ejemplo o zona de aplicación ${index+1}.`})),
     ],
     fields:[
       {key:'title',label:'Nombre',required:true,placeholder:'Ej. Ácido Hialurónico'},

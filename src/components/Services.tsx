@@ -10,7 +10,7 @@ import { usePublicContent } from '../cms/publicContent'
 import type { CmsMedia, CmsTreatment } from '../cms/types'
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: (i: number) => ({ opacity: 1, y: 0, transition: { duration: 1, delay: 0.1 + i * 0.1, ease: [0.25, 0.4, 0.25, 1] } }) };
-const treatmentExampleSlots = ['gallery_1','gallery_2','gallery_3'] as const
+const treatmentExampleSlots = ['gallery_1','gallery_2','gallery_3','gallery_4','gallery_5','gallery_6','gallery_7','gallery_8','gallery_9','gallery_10'] as const
 
 function splitApplications(value?: string) {
   return String(value || '').split(/\n|,/).map((item) => item.trim()).filter(Boolean)
@@ -47,12 +47,12 @@ export default function Services() {
   }, [data.site.treatments_carousel_interval_seconds])
 
   useEffect(() => {
-    if (visualHighlights.length < 2 || carouselPaused || prefersReducedMotion) return
+    if (visualHighlights.length < 2 || carouselPaused) return
     const timer = window.setTimeout(() => {
       setActiveImageIndex((current) => (current + 1) % visualHighlights.length)
     }, carouselIntervalMs)
     return () => window.clearTimeout(timer)
-  }, [activeImageIndex, carouselIntervalMs, carouselPaused, prefersReducedMotion, visualHighlights.length])
+  }, [activeImageIndex, carouselIntervalMs, carouselPaused, visualHighlights.length])
 
   const activeVisualIndex = visualHighlights.length ? activeImageIndex % visualHighlights.length : 0
   const activeVisual = visualHighlights[activeVisualIndex]
@@ -106,10 +106,10 @@ export default function Services() {
           {visualHighlights.length > 1 && <div className={styles.carouselControls}>
             <div className={styles.carouselNavigation}>
               <button type="button" aria-label="Imagen anterior" onClick={() => moveImage(-1)}>←</button>
-              <span aria-live={carouselPaused || prefersReducedMotion ? 'polite' : 'off'}>{String(activeVisualIndex + 1).padStart(2, '0')} / {String(visualHighlights.length).padStart(2, '0')}</span>
+              <span aria-live={carouselPaused ? 'polite' : 'off'}>{String(activeVisualIndex + 1).padStart(2, '0')} / {String(visualHighlights.length).padStart(2, '0')}</span>
               <button type="button" aria-label="Imagen siguiente" onClick={() => moveImage(1)}>→</button>
             </div>
-            {!prefersReducedMotion && <button type="button" className={styles.carouselPause} aria-pressed={carouselPaused} onClick={() => setCarouselPaused((paused) => !paused)}>{carouselPaused ? 'Reanudar' : 'Pausar'}</button>}
+            <button type="button" className={styles.carouselPause} aria-pressed={carouselPaused} onClick={() => setCarouselPaused((paused) => !paused)}>{carouselPaused ? 'Reanudar' : 'Pausar'}</button>
           </div>}
         </div>
       </motion.div>}

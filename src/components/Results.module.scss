@@ -114,9 +114,16 @@
   border: 1px solid $border;
   border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 4rem;
+  margin-bottom: 0.75rem;
   min-height: 280px;
 }
+
+.caseCarouselControls { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 4rem; }
+.caseCarouselControls > span { min-width: 4.5rem; color: $cream-muted; font-size: 0.65rem; letter-spacing: 0.12em; text-align: center; }
+.caseCarouselButton, .caseCarouselPause { min-height: 40px; padding: 0.45rem 0.75rem; border: 1px solid rgba(201,169,110,0.2); border-radius: 2px; color: $cream-muted; background: transparent; font: 600 0.66rem $font-body; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s; }
+.caseCarouselButton { min-width: 42px; font-size: 1rem; }
+.caseCarouselButton:hover, .caseCarouselPause:hover, .caseCarouselButton:focus-visible, .caseCarouselPause:focus-visible { color: $gold; border-color: rgba(201,169,110,0.5); outline: 0; }
+.caseCarouselPause { margin-left: auto; }
 
 .baSide {
   display: flex;
@@ -240,6 +247,7 @@
   .testGrid { grid-template-columns: 1fr; }
   .baWrap { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
   .baDivider { width: 100%; height: 1px; }
+  .caseCarouselControls { margin-bottom: 3rem; }
   .baImg {
     min-height: 240px;
     padding: 1rem;
