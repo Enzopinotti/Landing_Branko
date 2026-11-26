@@ -6,7 +6,7 @@ const fallback: CmsPublicBootstrapData = {
   site: {
     site_name: 'Branko Iriart', professional_name: 'Dr. Branko Iriart', professional_license: 'IMP 15.493',
     whatsapp_number: '541173608299', whatsapp_booking_message: 'Hola Dr. Branko! Quiero reservar un turno.', whatsapp_consult_message: 'Hola Dr. Branko! Me gustaría hacer una consulta.',
-    instagram_handle: '@biesteticafacial', instagram_url: 'https://instagram.com/biesteticafacial', patients_metric: '+500', followers_metric: '+2.700', treatments_metric: '6+', personalized_metric: '100%', treatments_carousel_interval_seconds: 3, status: 'published',
+    instagram_handle: '@biesteticafacial', instagram_url: 'https://instagram.com/biesteticafacial', patients_metric: '+500', followers_metric: '+2.700', treatments_metric: '6+', personalized_metric: '100%', treatments_carousel_interval_seconds: 3, results_carousel_interval_seconds: 3, status: 'published',
   },
   content: {
     'hero.badge': 'Estética Facial de Alta Precisión · IMP 15.493', 'hero.title_primary': 'La belleza que ya', 'hero.title_accent': 'tenés.',
